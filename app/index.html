@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
+
 :root{box-sizing:border-box}
 *,*::before,*::after{box-sizing:inherit}
 html{-webkit-text-size-adjust:100%}
@@ -135,6 +136,31 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--inv);color:var(--invtx);padding:12px 18px;border-radius:12px;font-size:14px;font-weight:500;z-index:20;max-width:calc(100% - 32px);text-align:center}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.modes{margin:12px 16px 0}
+.cardtop{display:flex;gap:12px;justify-content:space-between;align-items:flex-start}
+.thumb{position:relative;flex:none;width:76px;height:76px;border-radius:10px;overflow:hidden;background:var(--surf2)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb b{position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;border-radius:6px;padding:1px 6px;font-weight:600}
+.gal{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px}
+.gal button{flex:0 0 78%;scroll-snap-align:start;border:0;padding:0;background:var(--surf2);border-radius:12px;overflow:hidden;height:200px}
+.gal img{width:100%;height:100%;object-fit:cover;display:block}
+.bigimg{width:100%;max-height:60vh;object-fit:contain;background:var(--surf2);border-radius:12px}
+.upl{display:flex;flex-wrap:wrap;gap:8px}
+.tile{position:relative;width:84px;height:84px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.tile img{width:100%;height:100%;object-fit:cover;display:block}
+.tile button{position:absolute;top:3px;right:3px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;display:grid;place-items:center}
+.addph{width:84px;height:84px;border-radius:10px;border:1.5px dashed var(--tx3);background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--tx2);font-size:12px;text-align:center;padding:0 4px}
+.pickbtn{display:flex;align-items:center;gap:10px;text-align:left;color:var(--tx2);cursor:pointer}
+.chlink{flex:1;text-align:left;background:transparent;border:0;font-weight:600;padding:0;min-height:30px}
+dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;border:0;border-radius:0;padding:0}
+#pickBody{height:100%;display:flex;flex-direction:column;gap:10px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(12px + env(safe-area-inset-bottom,0px))}
+#pickBody .hd{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#pickBody .hd h3{margin:0;font-size:20px}
+#pickBody .hint{margin:0}
+#pickBody .ttl{font-size:12px;font-weight:600;color:var(--tx3);letter-spacing:.4px;text-transform:uppercase}
+#pickBody .res{flex:1;min-height:0;overflow:auto;margin:0}
+#pickBody .res .empty{padding:16px 14px;color:var(--tx2)}
 </style>
 </head>
 <body>
@@ -152,11 +178,13 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
     </div>
   </header>
 
+  <div class="seg modes" id="modeSw" role="group" data-i18n-aria="mode_aria"></div>
+
   <main>
-    <section id="v-feed" aria-labelledby="h-feed">
+    <section id="v-feed" aria-labelledby="h-feed" hidden>
       <h1 id="h-feed" data-i18n="feed_h">Лента грузов</h1>
       <p class="sub" id="feedSub"></p>
-      <div class="seg modebar" id="modeBar" role="group" hidden></div>
+      <div class="seg modebar" id="feedModeBar" role="group" hidden></div>
       <div id="meNote"></div>
       <div class="chips filters" id="filters" role="group"></div>
       <div id="feed"></div>
@@ -174,25 +202,23 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
       <div id="mineBody"></div>
     </section>
 
+    <section id="v-fleet" aria-labelledby="h-fleet" hidden>
+      <h1 id="h-fleet" data-i18n="fleet_h">Мой транспорт</h1>
+      <p class="sub" data-i18n="fleet_sub">Машины и маршруты. По ним лента показывает только подходящие грузы.</p>
+      <div id="fleetBody"></div>
+    </section>
+
     <section id="v-profile" aria-labelledby="h-profile" hidden>
       <h1 id="h-profile" data-i18n="profile_h">Профиль</h1>
       <div id="profileBody"></div>
     </section>
   </main>
 
-  <nav class="tabs" data-i18n-aria="nav_aria"><div class="in">
-    <button type="button" data-tab="feed" aria-current="page">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i18n="tab_feed">Лента</span></button>
-    <button type="button" data-tab="create">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span data-i18n="tab_create">Создать</span></button>
-    <button type="button" data-tab="mine">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span data-i18n="tab_mine">Мои</span></button>
-    <button type="button" data-tab="profile">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span data-i18n="tab_profile">Профиль</span></button>
-  </div></nav>
+  <nav class="tabs" data-i18n-aria="nav_aria"><div class="in" id="tabsIn"></div></nav>
 </div>
 
 <dialog id="dlg" aria-labelledby="dlgTitle"><div class="in" id="dlgBody"></div></dialog>
+<dialog id="pickDlg" aria-label="Выбор пункта"><div id="pickBody"></div></dialog>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
@@ -204,6 +230,7 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
   /* Public anon key: safe in the browser, access is limited by RLS policies */
   var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3emR5bHlhbHdtZm1qemhtbWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNzQzNTEsImV4cCI6MjEwNjg1MDM1MX0.m9_66lkRBHiyYc0H4LVHi9GRpv4YQ60fLfi0SpWzUCE';
   var BOT = 'https://t.me/adl_cargo_bot';
+  var BUCKET = 'listing-photos', MAX_PHOTOS = 5, MAX_BYTES = 1024 * 1024;
 
   var tg = (window.Telegram && window.Telegram.WebApp) || null;
   var inTg = !!(tg && tg.initData);
@@ -211,11 +238,13 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
   /* ---------- Texts: [ru, uz (latin)] ---------- */
   var D = {
     title: ['ADL Cargo — приложение', 'ADL Cargo — ilova'],
-    nav_aria: ['Разделы', 'Bo\u2018limlar'], lang_aria: ['Язык интерфейса', 'Interfeys tili'], look_aria: ['Оформление: цвет и тема', 'Ko\u2018rinish: rang va mavzu'],
-    tab_feed: ['Лента', 'Lenta'], tab_create: ['Создать', 'Yaratish'], tab_mine: ['Мои', 'E\u2019lonlarim'], tab_profile: ['Профиль', 'Profil'],
+    nav_aria: ['Разделы', 'Bo\u2018limlar'], lang_aria: ['Язык интерфейса', 'Interfeys tili'], look_aria: ['Оформление: цвет и тема', 'Ko\u2018rinish: rang va mavzu'], mode_aria: ['Режим', 'Rejim'],
+    mode_ship: ['Я заказчик', 'Men yuk egasiman'], mode_drv: ['Я водитель', 'Men haydovchiman'],
+    tab_feed: ['Лента', 'Lenta'], tab_create: ['Создать', 'Yaratish'], tab_mine: ['Мои', 'E\u2019lonlarim'], tab_fleet: ['Мой транспорт', 'Transportim'], tab_profile: ['Профиль', 'Profil'],
     feed_h: ['Лента грузов', 'Yuklar lentasi'],
     create_h: ['Новое объявление', 'Yangi e\u2019lon'], create_sub: ['Водители увидят его в ленте и позвонят вам.', 'Haydovchilar uni lentada ko\u2018rib, sizga qo\u2018ng\u2018iroq qiladi.'],
     mine_h: ['Мои объявления', 'Mening e\u2019lonlarim'], mine_sub: ['Снимайте объявление, когда договорились.', 'Kelishgach, e\u2019lonni olib tashlang.'],
+    fleet_h: ['Мой транспорт', 'Mening transportim'], fleet_sub: ['Машины и маршруты. По ним лента показывает только подходящие грузы.', 'Mashinalar va marshrutlar. Lenta shular bo\u2018yicha faqat mos yuklarni ko\u2018rsatadi.'],
     profile_h: ['Профиль', 'Profil'],
     any: ['Любая', 'Istalgan'], feed_count: ['Сейчас на доске: {0}', 'Hozir doskada: {0}'], me_count: ['Подходят вам: {0} из {1}', 'Sizga mos: {0} / {1}'],
     mode_me: ['Для меня', 'Men uchun'], mode_all: ['Все грузы', 'Hamma yuklar'],
@@ -231,9 +260,11 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
     show_phone: ['Показать номер', 'Raqamni ko\u2018rsatish'], call: ['Позвонить {0}', 'Qo\u2018ng\u2018iroq qilish {0}'], own_listing: ['Это ваше объявление.', 'Bu sizning e\u2019loningiz.'],
     phone_after_login: ['Номер открывается после входа через Telegram.', 'Raqam Telegram orqali kirgandan keyin ochiladi.'],
     phone_open_bot: ['Откройте приложение из бота, чтобы увидеть номер.', 'Raqamni ko\u2018rish uchun ilovani bot orqali oching.'], close: ['Закрыть', 'Yopish'],
+    photo_alt: ['Фото груза: {0}', 'Yuk surati: {0}'], back: ['Назад к объявлению', 'E\u2019longa qaytish'], prev: ['Предыдущее фото', 'Oldingi surat'], next: ['Следующее фото', 'Keyingi surat'],
     gate_h: ['Откройте приложение из бота', 'Ilovani bot orqali oching'],
     gate_create: ['Объявления создаются после входа через Telegram. Нажмите кнопку, чтобы открыть бота.', 'E\u2019lonlar Telegram orqali kirgandan keyin yaratiladi. Botni ochish uchun tugmani bosing.'],
     gate_mine: ['Свои объявления видны после входа через Telegram.', 'O\u2018z e\u2019lonlaringiz Telegram orqali kirgandan keyin ko\u2018rinadi.'],
+    gate_fleet: ['Транспорт и маршруты доступны после входа через Telegram.', 'Transport va marshrutlar Telegram orqali kirgandan keyin ochiladi.'],
     gate_profile: ['Профиль доступен после входа через Telegram.', 'Profil Telegram orqali kirgandan keyin ochiladi.'],
     open_bot: ['Открыть @adl_cargo_bot', '@adl_cargo_bot ni ochish'], logging_in: ['Входим через Telegram…', 'Telegram orqali kirilmoqda\u2026'],
     loading_profile: ['Загружаем профиль…', 'Profil yuklanmoqda\u2026'], loading: ['Загружаем…', 'Yuklanmoqda\u2026'],
@@ -241,11 +272,17 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
     phone_t: ['Чтобы водители могли позвонить, отправьте свой номер боту: откройте бота и нажмите «Старт». Потом вернитесь сюда.', 'Haydovchilar qo\u2018ng\u2018iroq qilishi uchun raqamingizni botga yuboring: botni ochib, «Start» ni bosing. Keyin shu yerga qayting.'],
     route_inter: ['Между городами', 'Shaharlar o\u2018rtasida'], route_intra: ['По городу', 'Shahar ichida'],
     lbl_from: ['Откуда', 'Qayerdan'], lbl_to: ['Куда', 'Qayerga'], lbl_city: ['Город', 'Shahar'],
-    place_ph: ['Начните вводить: город, район, посёлок', 'Yozishni boshlang: shahar, tuman, posyolka'], not_found: ['Ничего не найдено', 'Hech narsa topilmadi'], change: ['Изменить', 'O\u2018zgartirish'],
+    pick_choose: ['Выбрать из списка', 'Ro\u2018yxatdan tanlash'], pick_search_ph: ['Поиск: город, район, посёлок, рынок', 'Qidirish: shahar, tuman, posyolka, bozor'],
+    pick_hint: ['Выберите из списка: так водители находят объявления по вашему маршруту.', 'Ro\u2018yxatdan tanlang: haydovchilar e\u2019lonlarni marshrut bo\u2018yicha shunday topadi.'],
+    pick_regions: ['Области и Ташкент', 'Viloyatlar va Toshkent'], not_found: ['Ничего не найдено. Проверьте написание.', 'Hech narsa topilmadi. Yozilishini tekshiring.'], change: ['Изменить', 'O\u2018zgartirish'],
     lbl_weight: ['Вес груза, кг (необязательно)', 'Yuk og\u2018irligi, kg (ixtiyoriy)'], ph_weight: ['Например, 250', 'Masalan, 250'],
     lbl_vehicle: ['Какая машина нужна', 'Qanday mashina kerak'], refine: ['Уточнить для «{0}» (необязательно):', '«{0}» uchun aniqlashtiring (ixtiyoriy):'],
     fit_hint: ['Для {0} подойдут: {1}.', '{0} uchun mos keladi: {1}.'], fit_more: [' и другие', ' va boshqalar'],
     fit_none: ['Вес больше грузоподъёмности любой машины в списке.', 'Og\u2018irlik ro\u2018yxatdagi har qanday mashinaning yuk ko\u2018tarish qobiliyatidan katta.'],
+    photos_lbl: ['Фото груза (необязательно)', 'Yuk surati (ixtiyoriy)'], photos_add: ['Добавить фото', 'Surat qo\u2018shish'], remove_photo: ['Убрать фото', 'Suratni olib tashlash'],
+    photos_hint: ['До 5 фото. Мы сами уменьшим их до нужного размера.', '5 tagacha surat. Hajmini o\u2018zimiz kichraytiramiz.'],
+    photos_err: ['Не удалось обработать фото. Попробуйте другое.', 'Suratni qayta ishlab bo\u2018lmadi. Boshqasini sinab ko\u2018ring.'],
+    upload_prog: ['Загружаем фото {0} из {1}…', 'Surat yuklanmoqda {0}/{1}\u2026'], upload_fail: ['Не удалось загрузить фото. Попробуйте ещё раз.', 'Suratni yuklab bo\u2018lmadi. Qayta urinib ko\u2018ring.'],
     excl_t: ['Отдельная машина только для моего груза', 'Faqat mening yukim uchun alohida mashina'], excl_d: ['Объявление получит метку VIP · вся машина', 'E\u2019lon VIP · butun mashina belgisini oladi'],
     lbl_price: ['Цена, сум (необязательно)', 'Narx, so\u2018m (ixtiyoriy)'], ph_price: ['Пусто — «Договорная»', 'Bo\u2018sh qoldirsangiz — «Kelishiladi»'],
     lbl_desc: ['Описание (необязательно)', 'Tavsif (ixtiyoriy)'], ph_desc: ['Что везём, где забрать, когда выезд', 'Nima tashiladi, qayerdan olinadi, qachon jo\u2018naydi'],
@@ -261,16 +298,16 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
     f_net: ['Нет связи с сервером. Проверьте интернет и повторите.', 'Server bilan aloqa yo\u2018q. Internetni tekshirib, qayta urinib ko\u2018ring.'],
     f_generic: ['Не получилось: {0}', 'Bajarilmadi: {0}'],
     f_plate: ['Проверьте номер автомобиля: 5–10 латинских букв и цифр, например 01A123BC.', 'Avtomobil raqamini tekshiring: 5\u201310 ta lotin harfi va raqam, masalan 01A123BC.'],
-    f_dupe: ['Эта машина уже добавлена.', 'Bu mashina allaqachon qo\u2018shilgan.'], f_role: ['Сначала включите режим водителя в профиле.', 'Avval profilda haydovchi rejimini yoqing.'],
+    f_dupe: ['Эта машина уже добавлена.', 'Bu mashina allaqachon qo\u2018shilgan.'], f_role: ['Сначала включите режим водителя.', 'Avval haydovchi rejimini yoqing.'],
     st_active: ['Активно до {0}', '{0} gacha faol'], st_deal: ['Договорились', 'Kelishildi'], st_closed: ['Снято', 'Olib tashlangan'], st_removed: ['Удалено', 'O\u2018chirilgan'], st_expired: ['Истекло', 'Muddati tugagan'],
     created: ['Создано {0} · номер открыли: {1}', 'Yaratilgan {0} · raqamni ochishdi: {1}'], take_off: ['Снять с доски', 'Doskadan olib tashlash'],
     mine_empty_h: ['Пока пусто', 'Hozircha bo\u2018sh'], mine_empty_t: ['Вы ещё не размещали объявления.', 'Siz hali e\u2019lon joylamagansiz.'], mine_empty_btn: ['Создать объявление', 'E\u2019lon yaratish'],
     close_h: ['Снять объявление', 'E\u2019lonni olib tashlash'], close_q: ['Что произошло с грузом?', 'Yukka nima bo\u2018ldi?'], c_deal: ['Договорились', 'Kelishdik'], c_not: ['Груз больше не нужен', 'Yuk endi kerak emas'], closed_toast: ['Объявление снято', 'E\u2019lon olib tashlandi'],
     look_h: ['Оформление', 'Ko\u2018rinish'], look_color: ['Цвет', 'Rang'], look_theme: ['Тема', 'Mavzu'], th_light: ['Светлая', 'Yorug\u2018'], th_dark: ['Тёмная', 'Qorong\u2018i'], th_auto: ['Как в Telegram', 'Telegram kabi'],
     pal_kraft: ['Картон', 'Karton'], pal_graphite: ['Графит', 'Grafit'], pal_pine: ['Хвоя', 'Qarag\u2018ay'], pal_bordeaux: ['Бордо', 'Bordo'], pal_navy: ['Морская синь', 'Dengiz ko\u2018ki'],
-    guest: ['Гость', 'Mehmon'], p_name: ['Имя', 'Ism'], p_phone: ['Телефон', 'Telefon'],
+    p_name: ['Имя', 'Ism'], p_phone: ['Телефон', 'Telefon'], p_rating: ['Рейтинг', 'Reyting'],
     drv_h: ['Режим водителя', 'Haydovchi rejimi'],
-    drv_t: ['Добавьте машину и маршруты: в ленте появится режим «Для меня» с грузами только по вашему направлению и под вашу машину.', 'Mashina va marshrutlarni qo\u2018shing: lentada «Men uchun» rejimi paydo bo\u2018ladi — faqat yo\u2018nalishingiz va mashinangizga mos yuklar.'],
+    drv_t: ['Чтобы добавлять машины и маршруты, включите режим водителя.', 'Mashina va marshrutlarni qo\u2018shish uchun haydovchi rejimini yoqing.'],
     drv_enable: ['Включить режим водителя', 'Haydovchi rejimini yoqish'], drv_on: ['Режим водителя включён', 'Haydovchi rejimi yoqildi'],
     my_vehicles: ['Мои машины', 'Mening mashinalarim'], add_vehicle: ['Добавить машину', 'Mashina qo\u2018shish'], no_vehicles: ['Машин пока нет.', 'Hozircha mashinalar yo\u2018q.'],
     lbl_plate: ['Госномер', 'Davlat raqami'], ph_plate: ['Например, 01A123BC', 'Masalan, 01A123BC'], lbl_brand: ['Марка (необязательно)', 'Marka (ixtiyoriy)'],
@@ -301,10 +338,16 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
   function icon(path, size) { var s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('width', size); s.setAttribute('height', size); s.setAttribute('fill', 'none'); s.setAttribute('stroke', 'currentColor'); s.setAttribute('stroke-width', '2'); s.setAttribute('stroke-linecap', 'round'); s.setAttribute('stroke-linejoin', 'round'); s.setAttribute('aria-hidden', 'true'); s.innerHTML = path; return s; }
   var P = {
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
-    both: '<path d="M7 8l-4 4 4 4M17 8l4 4-4 4M3 12h18"/>',
     crown: '<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/>',
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
-    phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z"/>'
+    phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+    camera: '<path d="M5 8h2l1.5-2h7L17 8h2a1 1 0 011 1v9a1 1 0 01-1 1H5a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.2"/>',
+    lines: '<path d="M4 6h16M4 12h16M4 18h10"/>',
+    plus: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+    list: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',
+    truck: '<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>'
   };
   function num(n) { return Math.round(n).toLocaleString('ru-RU'); }
   function fmtKg(w) { return w >= 1000 ? t('ton', (w / 1000).toLocaleString('ru-RU', { maximumFractionDigits: 1 })) : t('kg', Math.round(w)); }
@@ -337,16 +380,21 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
     return t('f_generic', msg);
   }
   function pname(p) { if (!p) return ''; return lang === 'uz' ? (p.name_uz_latn || p.name_ru) : (p.name_ru || p.name_uz_latn); }
+  function uuid() { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }); }
 
   /* ---------- State ---------- */
   var session = null, profile = null;
-  var types = [], typeMap = {};
+  var types = [], typeMap = {}, ptypes = {}, regionsCache = null;
   var feedAll = null, feedMe = null, group = 'all';
-  var mode = null, modeSet = false;       // 'me' | 'all'
-  var vehicles = [], routes = [], driverLoaded = false;
+  var feedMode = null, feedModeSet = false;   // 'me' | 'all' inside the driver feed
+  var vehicles = [], routes = [];
   var form = null, vform = null, rform = null, showVForm = false, showRForm = false;
   var mineRows = null;
-  var current = 'feed';
+  var UI_KEY = 'adlcargo-ui';
+  var uiMode = null, uiSaved = false, userTouched = false;   // 'shipper' | 'driver'
+  var current = null;
+  try { var su = localStorage.getItem(UI_KEY); if (su === 'shipper' || su === 'driver') { uiMode = su; uiSaved = true; } } catch (e) {}
+  if (!uiMode) uiMode = inTg ? 'shipper' : 'driver';
 
   /* ---------- Theme (shared with the site, default Graphite + light) ---------- */
   var root = document.documentElement;
@@ -400,6 +448,54 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
     }).then(function (j) { session = { access_token: j.access_token, refresh_token: j.refresh_token, user_id: j.user_id }; return session; });
   }
 
+  /* ---------- Photos: view URL, compress, upload ---------- */
+  function photoUrl(path) { return SB + '/storage/v1/object/public/' + BUCKET + '/' + path; }
+  function photosOf(l) { return (l.listing_photos || []).slice().sort(function (a, b) { return a.position - b.position; }).map(function (p) { return p.path; }); }
+  function viaImg(file) {
+    return new Promise(function (res, rej) {
+      var u = URL.createObjectURL(file), im = new Image();
+      im.onload = function () { URL.revokeObjectURL(u); res(im); };
+      im.onerror = function () { URL.revokeObjectURL(u); rej(new Error('image')); };
+      im.src = u;
+    });
+  }
+  function loadBitmap(file) {
+    if (window.createImageBitmap) return createImageBitmap(file).catch(function () { return viaImg(file); });
+    return viaImg(file);
+  }
+  function canvasBlob(c, q) { return new Promise(function (res) { c.toBlob(function (b) { res(b); }, 'image/jpeg', q); }); }
+  /* Resize to 1600px max and re-encode as JPEG under the 1 MB storage limit */
+  function compressImage(file) {
+    return loadBitmap(file).then(function (bm) {
+      var w = bm.width || bm.naturalWidth, h = bm.height || bm.naturalHeight;
+      var sc = Math.min(1, 1600 / Math.max(w, h)), cw = Math.round(w * sc), ch = Math.round(h * sc);
+      var c = document.createElement('canvas'); c.width = cw; c.height = ch;
+      var ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cw, ch); ctx.drawImage(bm, 0, 0, cw, ch);
+      if (bm.close) bm.close();
+      var q = 0.85;
+      function attempt() {
+        return canvasBlob(c, q).then(function (b) {
+          if (!b) throw new Error('blob');
+          if (b.size <= 900 * 1024) return b;
+          if (q <= 0.4) { if (b.size <= MAX_BYTES) return b; throw new Error('too big'); }
+          q -= 0.1; return attempt();
+        });
+      }
+      return attempt();
+    });
+  }
+  function storageReq(method, path, body, retried) {
+    var h = { apikey: KEY, Authorization: 'Bearer ' + session.access_token };
+    if (body) { h['Content-Type'] = 'image/jpeg'; h['x-upsert'] = 'false'; }
+    return fetch(SB + '/storage/v1/object/' + BUCKET + '/' + path, { method: method, headers: h, body: body }).then(function (r) {
+      if (r.status === 401 && !retried) return login().then(function () { return storageReq(method, path, body, true); });
+      if (!r.ok) throw new Error('storage ' + r.status);
+      return path;
+    });
+  }
+  function uploadPhoto(blob) { return storageReq('POST', session.user_id + '/' + uuid() + '.jpg', blob); }
+  function dropPhotos(paths) { paths.forEach(function (p) { storageReq('DELETE', p).catch(function () {}); }); }
+
   /* ---------- Vehicle types ---------- */
   function indexTypes() { typeMap = {}; types.forEach(function (x) { typeMap[x.code] = x; }); }
   function tname(x) { return lang === 'uz' ? (x.name_uz || x.name_ru) : x.name_ru; }
@@ -407,14 +503,16 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
   function kids(code) { return types.filter(function (x) { return x.parent_code === code; }); }
   function vLabel(code) { var x = typeMap[code]; if (!x) return code; return x.parent_code && typeMap[x.parent_code] ? tname(typeMap[x.parent_code]) + ' ' + tname(x) : tname(x); }
   function vGroup(code) { var x = typeMap[code]; return x && x.parent_code ? x.parent_code : code; }
+  function placeTypeLabel(code) { var x = ptypes[code]; return x ? (lang === 'uz' ? (x.name_uz || x.name_ru) : x.name_ru) : ''; }
 
   /* ---------- Listing pieces ---------- */
   var LISTING_SELECT = 'id,author_id,description,weight_kg,price_amount,exclusive_vehicle,route_type,status,close_reason,created_at,expires_at,contact_count,' +
-    'from:places!listings_from_place_id_fkey(name_ru,name_uz_latn),to:places!listings_to_place_id_fkey(name_ru,name_uz_latn),listing_vehicle_types(vehicle_type)';
+    'from:places!listings_from_place_id_fkey(name_ru,name_uz_latn),to:places!listings_to_place_id_fkey(name_ru,name_uz_latn),listing_vehicle_types(vehicle_type),listing_photos(path,position)';
+  function routeText(l) { return l.route_type === 'intracity' ? pname(l.from) : pname(l.from) + ' → ' + pname(l.to); }
   function routeNode(l) {
     var r = el('div', 'rt');
     r.appendChild(el('span', null, pname(l.from)));
-    if (l.route_type === 'intracity') { var c = el('span', 'pl ct', t('intracity')); r.appendChild(c); return r; }
+    if (l.route_type === 'intracity') { r.appendChild(el('span', 'pl ct', t('intracity'))); return r; }
     r.appendChild(icon(P.arrow, 16));
     r.appendChild(el('span', null, pname(l.to)));
     return r;
@@ -424,6 +522,20 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
     if (l.exclusive_vehicle) { var v = el('span', 'pl vp'); v.appendChild(icon(P.crown, 13)); v.appendChild(document.createTextNode(t('vip'))); c.appendChild(v); }
     (l.listing_vehicle_types || []).forEach(function (x) { c.appendChild(el('span', 'vt', vLabel(x.vehicle_type))); });
     return c;
+  }
+  function thumbNode(l) {
+    var ph = photosOf(l); if (!ph.length) return null;
+    var d = el('div', 'thumb'); var im = document.createElement('img');
+    im.src = photoUrl(ph[0]); im.alt = ''; im.loading = 'lazy'; im.decoding = 'async';
+    im.addEventListener('error', function () { d.remove(); });
+    d.appendChild(im); if (ph.length > 1) d.appendChild(el('b', null, '+' + (ph.length - 1)));
+    return d;
+  }
+  function cardTop(l) {
+    var row = el('div', 'cardtop'); var left = el('div');
+    left.appendChild(routeNode(l)); left.appendChild(el('div', 'meta', ago(l.created_at)));
+    row.appendChild(left); var th = thumbNode(l); if (th) row.appendChild(th);
+    return row;
   }
 
   /* ---------- Driver data and the "for me" filter ---------- */
@@ -449,8 +561,7 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
     ]).then(function (res) {
       vehicles = res[0] || [];
       routes = (res[1] || []).map(function (r) { r.driver_route_points = (r.driver_route_points || []).sort(function (a, b) { return a.position - b.position; }); return r; });
-      driverLoaded = true;
-    }).catch(function () { driverLoaded = true; });
+    }).catch(function () {});
   }
   function loadMe() {
     var act = activeRoutes();
@@ -464,18 +575,23 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
     }).then(function (rows) { feedMe = rows; renderFeed(); })
       .catch(function () { feedMe = 'error'; renderFeed(); });
   }
-  function refreshDriverFeed() { return loadDriver().then(function () { if (!modeSet) mode = hasDriverSetup() ? 'me' : 'all'; renderModeBar(); return mode === 'me' ? loadMe() : null; }); }
+  function refreshDriverFeed() {
+    return loadDriver().then(function () {
+      if (!feedModeSet) feedMode = hasDriverSetup() ? 'me' : 'all';
+      renderFeedModeBar();
+      return feedMode === 'me' ? loadMe() : null;
+    });
+  }
 
-  /* ---------- Feed ---------- */
-  function renderModeBar() {
-    var bar = $('modeBar');
-    var show = !!session && (isDriver() || hasDriverSetup());
-    bar.hidden = !show; bar.textContent = '';
-    if (!show) { mode = 'all'; return; }
-    if (!mode) mode = hasDriverSetup() ? 'me' : 'all';
+  /* ---------- Feed (driver mode) ---------- */
+  function renderFeedModeBar() {
+    var bar = $('feedModeBar');
+    bar.hidden = !session; bar.textContent = '';
+    if (!session) { feedMode = 'all'; return; }
+    if (!feedMode) feedMode = hasDriverSetup() ? 'me' : 'all';
     [['me', t('mode_me')], ['all', t('mode_all')]].forEach(function (o) {
-      var b = el('button', null, o[1]); b.type = 'button'; b.setAttribute('aria-pressed', String(mode === o[0]));
-      b.addEventListener('click', function () { mode = o[0]; modeSet = true; renderModeBar(); if (mode === 'me') loadMe(); else renderFeed(); });
+      var b = el('button', null, o[1]); b.type = 'button'; b.setAttribute('aria-pressed', String(feedMode === o[0]));
+      b.addEventListener('click', function () { feedMode = o[0]; feedModeSet = true; renderFeedModeBar(); if (feedMode === 'me') loadMe(); else renderFeed(); });
       bar.appendChild(b);
     });
   }
@@ -496,27 +612,27 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
   }
   function renderFeed() {
     var box = $('feed'), note = $('meNote'); box.textContent = ''; note.textContent = '';
-    var useMe = mode === 'me' && !$('modeBar').hidden;
+    var useMe = feedMode === 'me' && !$('feedModeBar').hidden;
     var base = useMe && activeRoutes().length ? feedMe : feedAll;
     if (useMe && !activeRoutes().length) {
       var n = el('div', 'note'); n.appendChild(el('div', null, t('me_setup')));
-      var nb = el('button', 'btn pri sm', t('me_setup_btn')); nb.type = 'button'; nb.addEventListener('click', function () { show('profile'); }); n.appendChild(nb); note.appendChild(n);
+      var nb = el('button', 'btn pri sm', t('me_setup_btn')); nb.type = 'button'; nb.addEventListener('click', function () { show('fleet'); }); n.appendChild(nb); note.appendChild(n);
     }
-    if (base === 'error' || (!useMe && feedAll === 'error')) { box.appendChild(stateNode(t('feed_err'), t('retry'), function () { useMe ? loadMe() : loadFeed(); })); return; }
+    if (base === 'error') { box.appendChild(stateNode(t('feed_err'), t('retry'), function () { useMe && activeRoutes().length ? loadMe() : loadFeed(); })); return; }
     if (!base || base === 'loading') { box.appendChild(el('div', 'state', t('feed_loading'))); return; }
     var rows = base.slice();
     if (useMe) rows = rows.filter(fitsDriver);
     rows = rows.filter(function (l) { return group === 'all' || (l.listing_vehicle_types || []).some(function (x) { return vGroup(x.vehicle_type) === group; }); });
     var total = Array.isArray(feedAll) ? feedAll.length : 0;
-    $('feedSub').textContent = useMe ? t('me_count', rows.length, total) : (Array.isArray(feedAll) && feedAll.length ? t('feed_count', feedAll.length) : '');
+    $('feedSub').textContent = useMe ? t('me_count', rows.length, total) : (total ? t('feed_count', total) : '');
     if (!rows.length) {
-      if (useMe) { box.appendChild(stateNode(t('me_empty'), t('me_empty_btn'), function () { mode = 'all'; modeSet = true; renderModeBar(); renderFeed(); })); }
-      else box.appendChild(el('div', 'state', (Array.isArray(feedAll) && feedAll.length) ? t('feed_empty_f') : t('feed_empty')));
+      if (useMe) { box.appendChild(stateNode(t('me_empty'), t('me_empty_btn'), function () { feedMode = 'all'; feedModeSet = true; renderFeedModeBar(); renderFeed(); })); }
+      else box.appendChild(el('div', 'state', total ? t('feed_empty_f') : t('feed_empty')));
       return;
     }
     rows.forEach(function (l) {
       var c = el('button', 'lc' + (l.exclusive_vehicle ? ' vip' : '')); c.type = 'button';
-      var top = el('div'); top.appendChild(routeNode(l)); top.appendChild(el('div', 'meta', ago(l.created_at))); c.appendChild(top);
+      c.appendChild(cardTop(l));
       c.appendChild(chipsNode(l));
       if (l.description) c.appendChild(el('div', 'ds', l.description));
       var row = el('div', 'row');
@@ -534,7 +650,7 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
       .catch(function () { feedAll = 'error'; renderFeed(); });
   }
 
-  /* ---------- Dialog ---------- */
+  /* ---------- Dialog, details, gallery ---------- */
   var dlg = $('dlg');
   function closeDlg() { if (dlg.open) dlg.close(); }
   dlg.addEventListener('click', function (e) { if (e.target === dlg) closeDlg(); });
@@ -549,10 +665,35 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
     var x = el('button', 'x'); x.type = 'button'; x.setAttribute('aria-label', t('close')); x.appendChild(icon(P.x, 18)); x.addEventListener('click', closeDlg);
     hd.appendChild(left); hd.appendChild(x); body.appendChild(hd);
   }
+  function galleryNode(l) {
+    var ph = photosOf(l); if (!ph.length) return null;
+    var g = el('div', 'gal');
+    ph.forEach(function (p, i) {
+      var b = el('button'); b.type = 'button'; b.setAttribute('aria-label', t('photo_alt', routeText(l)) + ' ' + (i + 1) + '/' + ph.length);
+      var im = document.createElement('img'); im.src = photoUrl(p); im.alt = t('photo_alt', routeText(l)); im.loading = 'lazy'; b.appendChild(im);
+      b.addEventListener('click', function () { openGallery(l, i); }); g.appendChild(b);
+    });
+    return g;
+  }
+  function openGallery(l, i) {
+    var ph = photosOf(l);
+    openDlg(function (body) {
+      dlgHead(body, el('h3', null, (i + 1) + ' / ' + ph.length));
+      var im = document.createElement('img'); im.className = 'bigimg'; im.src = photoUrl(ph[i]); im.alt = t('photo_alt', routeText(l)); body.appendChild(im);
+      if (ph.length > 1) {
+        var nav = el('div', 'row');
+        var pv = el('button', 'btn sec sm', '‹'); pv.type = 'button'; pv.setAttribute('aria-label', t('prev')); pv.addEventListener('click', function () { openGallery(l, (i + ph.length - 1) % ph.length); });
+        var nx = el('button', 'btn sec sm', '›'); nx.type = 'button'; nx.setAttribute('aria-label', t('next')); nx.addEventListener('click', function () { openGallery(l, (i + 1) % ph.length); });
+        nav.appendChild(pv); nav.appendChild(nx); body.appendChild(nav);
+      }
+      var bk = el('button', 'btn sec block', t('back')); bk.type = 'button'; bk.addEventListener('click', function () { openDetail(l); }); body.appendChild(bk);
+    });
+  }
   function openDetail(l) {
     openDlg(function (body) {
       var h = el('h3'); var r = routeNode(l); r.style.fontSize = '20px'; h.appendChild(r);
       dlgHead(body, h, ago(l.created_at));
+      var g = galleryNode(l); if (g) body.appendChild(g);
       body.appendChild(chipsNode(l));
       var dl = el('dl');
       function add(k, v) { dl.appendChild(el('dt', null, k)); dl.appendChild(el('dd', null, v)); }
@@ -590,41 +731,62 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
   function openBot() { if (tg && tg.openTelegramLink) { tg.openTelegramLink(BOT); if (tg.close) setTimeout(function () { tg.close(); }, 200); } else { window.open(BOT, '_blank'); } }
   function gateTg(body, textKey) { gateCard(body, t('gate_h'), t(textKey), t('open_bot'), openBot); }
 
-  function placePicker(obj, key, label) {
-    var wrap = el('div');
-    wrap.appendChild(el('label', 'l', label));
-    var holder = el('div', 'pick'); wrap.appendChild(holder);
+  /* Full-screen place picker: search on top, list below, so the keyboard never hides the results */
+  var pickDlg = $('pickDlg');
+  function closePick() { if (pickDlg.open) pickDlg.close(); }
+  function getRegions() {
+    if (regionsCache) return Promise.resolve(regionsCache);
+    return rest('places?select=id,name_ru,name_uz_latn,type_code&type_code=eq.region&is_active=eq.true&order=name_ru').then(function (rows) { regionsCache = rows; return rows; });
+  }
+  function openPicker(label, onPick) {
+    var body = $('pickBody'); body.textContent = '';
+    var hd = el('div', 'hd'); hd.appendChild(el('h3', null, label));
+    var x = el('button', 'x'); x.type = 'button'; x.setAttribute('aria-label', t('close')); x.appendChild(icon(P.x, 18)); x.addEventListener('click', closePick);
+    hd.appendChild(x); body.appendChild(hd);
+    var inp = el('input', 'inp'); inp.type = 'search'; inp.placeholder = t('pick_search_ph'); inp.setAttribute('autocomplete', 'off'); inp.setAttribute('enterkeyhint', 'search'); inp.setAttribute('aria-label', label);
+    body.appendChild(inp);
+    body.appendChild(el('p', 'hint', t('pick_hint')));
+    var ttl = el('div', 'ttl'); body.appendChild(ttl);
+    var list = el('ul', 'res'); body.appendChild(list);
+    function fill(rows, heading) {
+      ttl.textContent = heading || ''; list.textContent = '';
+      if (!rows.length) { var li0 = el('li'); li0.appendChild(el('div', 'empty', t('not_found'))); list.appendChild(li0); return; }
+      rows.forEach(function (p) {
+        var li = el('li'); var b = el('button'); b.type = 'button'; var nm = pname(p);
+        b.appendChild(document.createTextNode(nm));
+        var sm = [placeTypeLabel(p.type_code), p.parent_name_ru].filter(Boolean).join(' · ');
+        if (sm) b.appendChild(el('small', null, sm));
+        b.addEventListener('click', function () { closePick(); onPick({ id: p.id, name: nm }); });
+        li.appendChild(b); list.appendChild(li);
+      });
+    }
+    function showRegions() { getRegions().then(function (rows) { if (!inp.value.trim()) fill(rows, t('pick_regions')); }).catch(function () {}); }
+    var timer = null, seq = 0;
+    inp.addEventListener('input', function () {
+      clearTimeout(timer); var q = inp.value.trim();
+      if (q.length < 2) { seq++; showRegions(); return; }
+      timer = setTimeout(function () {
+        var my = ++seq;
+        rpc('search_places', { q: q, lim: 20 }).then(function (rows) { if (my === seq) fill(rows, ''); }).catch(function (e) { toast(friendly(e.message)); });
+      }, 250);
+    });
+    pickDlg.showModal(); inp.focus(); showRegions();
+  }
+  pickDlg.addEventListener('click', function (e) { if (e.target === pickDlg) closePick(); });
+  function placeField(obj, key, label) {
+    var wrap = el('div'); wrap.appendChild(el('label', 'l', label));
+    var holder = el('div'); wrap.appendChild(holder);
+    function pick() { openPicker(label, function (p) { obj[key] = p; draw(); }); }
     function draw() {
       holder.textContent = '';
       if (obj[key]) {
-        var c = el('div', 'chosen'); c.appendChild(el('span', null, obj[key].name));
+        var c = el('div', 'chosen'); var open = el('button', 'chlink', obj[key].name); open.type = 'button'; open.addEventListener('click', pick); c.appendChild(open);
         var x = el('button'); x.type = 'button'; x.setAttribute('aria-label', t('change')); x.appendChild(icon(P.x, 16));
-        x.addEventListener('click', function () { obj[key] = null; draw(); }); c.appendChild(x); holder.appendChild(c); return;
+        x.addEventListener('click', function () { obj[key] = null; draw(); }); c.appendChild(x); holder.appendChild(c);
+      } else {
+        var b = el('button', 'inp pickbtn'); b.type = 'button'; b.appendChild(icon(P.search, 18)); b.appendChild(el('span', null, t('pick_choose')));
+        b.addEventListener('click', pick); holder.appendChild(b);
       }
-      var inp = el('input', 'inp'); inp.type = 'search'; inp.placeholder = t('place_ph'); inp.setAttribute('autocomplete', 'off');
-      var list = el('ul', 'res'); list.hidden = true;
-      var timer = null, seq = 0;
-      inp.addEventListener('input', function () {
-        clearTimeout(timer); var q = inp.value.trim();
-        if (q.length < 2) { list.hidden = true; return; }
-        timer = setTimeout(function () {
-          var my = ++seq;
-          rpc('search_places', { q: q, lim: 8 }).then(function (rows) {
-            if (my !== seq) return;
-            list.textContent = ''; list.hidden = false;
-            if (!rows.length) { var li0 = el('li'); var e0 = el('button', null, t('not_found')); e0.type = 'button'; e0.disabled = true; li0.appendChild(e0); list.appendChild(li0); return; }
-            rows.forEach(function (p) {
-              var li = el('li'); var b = el('button'); b.type = 'button';
-              var nm = pname(p);
-              b.appendChild(document.createTextNode(nm));
-              if (p.parent_name_ru) b.appendChild(el('small', null, p.parent_name_ru));
-              b.addEventListener('click', function () { obj[key] = { id: p.id, name: nm }; draw(); });
-              li.appendChild(b); list.appendChild(li);
-            });
-          }).catch(function (e) { toast(friendly(e.message)); });
-        }, 250);
-      });
-      holder.appendChild(inp); holder.appendChild(list);
     }
     draw();
     return wrap;
@@ -670,9 +832,41 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
     });
     return out;
   }
+  function photoBlock() {
+    var box = el('div');
+    box.appendChild(el('label', 'l', t('photos_lbl')));
+    var grid = el('div', 'upl'); box.appendChild(grid);
+    var fi = el('input'); fi.type = 'file'; fi.accept = 'image/*'; fi.multiple = true; fi.hidden = true; box.appendChild(fi);
+    function draw() {
+      grid.textContent = '';
+      form.photos.forEach(function (ph, i) {
+        var tl = el('div', 'tile'); var im = document.createElement('img'); im.src = ph.url; im.alt = ''; tl.appendChild(im);
+        var rm = el('button'); rm.type = 'button'; rm.setAttribute('aria-label', t('remove_photo')); rm.appendChild(icon(P.x, 14));
+        rm.addEventListener('click', function () { URL.revokeObjectURL(ph.url); form.photos.splice(i, 1); draw(); }); tl.appendChild(rm); grid.appendChild(tl);
+      });
+      if (form.photos.length < MAX_PHOTOS) {
+        var a = el('button', 'addph'); a.type = 'button'; a.appendChild(icon(P.camera, 22)); a.appendChild(el('span', null, t('photos_add')));
+        a.addEventListener('click', function () { fi.click(); }); grid.appendChild(a);
+      }
+    }
+    fi.addEventListener('change', function () {
+      var files = [].slice.call(fi.files || []).slice(0, MAX_PHOTOS - form.photos.length); fi.value = '';
+      files.reduce(function (chain, f) {
+        return chain.then(function () {
+          return compressImage(f).then(function (b) { form.photos.push({ blob: b, url: URL.createObjectURL(b) }); draw(); }).catch(function () { toast(t('photos_err')); });
+        });
+      }, Promise.resolve());
+    });
+    box.appendChild(el('div', 'hint', t('photos_hint')));
+    draw();
+    return box;
+  }
 
-  /* ---------- Create ---------- */
-  function newForm() { return { route: 'intercity', from: null, to: null, codes: {}, excl: false, weight: '', price: '', desc: '', busy: false }; }
+  /* ---------- Create (shipper mode) ---------- */
+  function newForm() {
+    if (form && form.photos) form.photos.forEach(function (p) { URL.revokeObjectURL(p.url); });
+    return { route: 'intercity', from: null, to: null, codes: {}, excl: false, weight: '', price: '', desc: '', photos: [], busy: false };
+  }
   function renderCreate() {
     var body = $('createBody'); body.textContent = '';
     if (!inTg) { gateTg(body, 'gate_create'); return; }
@@ -687,8 +881,8 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
       b.addEventListener('click', function () { form.route = o[0]; renderCreate(); }); seg.appendChild(b);
     });
     body.appendChild(seg);
-    body.appendChild(placePicker(form, 'from', form.route === 'intracity' ? t('lbl_city') : t('lbl_from')));
-    if (form.route === 'intercity') body.appendChild(placePicker(form, 'to', t('lbl_to')));
+    body.appendChild(placeField(form, 'from', form.route === 'intracity' ? t('lbl_city') : t('lbl_from')));
+    if (form.route === 'intercity') body.appendChild(placeField(form, 'to', t('lbl_to')));
 
     body.appendChild(el('label', 'l', t('lbl_weight')));
     var w = el('input', 'inp'); w.type = 'number'; w.inputMode = 'decimal'; w.min = '0'; w.placeholder = t('ph_weight'); w.value = form.weight;
@@ -698,6 +892,8 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
 
     body.appendChild(el('label', 'l', t('lbl_vehicle')));
     vwrap.appendChild(vehicleBlock()); body.appendChild(vwrap);
+
+    body.appendChild(photoBlock());
 
     var sw = el('button', 'sw'); sw.type = 'button'; sw.setAttribute('aria-pressed', String(form.excl));
     var txt = el('div'); txt.appendChild(el('div', 't', t('excl_t'))); txt.appendChild(el('div', 'd', t('excl_d')));
@@ -725,17 +921,28 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
       var wt = form.weight === '' ? null : Number(form.weight); if (wt !== null && !(wt > 0)) return fail(t('e_weight'));
       var pc = form.price === '' ? null : Number(form.price); if (pc !== null && !(pc >= 0)) return fail(t('e_price'));
       if (form.busy) return; form.busy = true; go.disabled = true; go.textContent = t('publishing');
-      rpc('create_listing', {
-        p_from_place: form.from.id, p_to_place: form.route === 'intracity' ? form.from.id : form.to.id,
-        p_vehicle_types: codes, p_description: form.desc.trim() || null, p_weight_kg: wt, p_price_amount: pc,
-        p_exclusive: form.excl, p_route_type: form.route, p_photo_paths: []
-      }).then(function () {
-        form = newForm(); toast(t('published')); feedAll = null; mineRows = null; show('mine');
-      }).catch(function (e) { form.busy = false; go.disabled = false; go.textContent = t('publish'); fail(friendly(e.message)); });
+      var uploaded = [];
+      function reset(m) { form.busy = false; go.disabled = false; go.textContent = t('publish'); if (m) fail(m); }
+      form.photos.reduce(function (chain, ph, i) {
+        return chain.then(function () {
+          go.textContent = t('upload_prog', i + 1, form.photos.length);
+          return uploadPhoto(ph.blob).then(function (path) { uploaded.push(path); });
+        });
+      }, Promise.resolve()).catch(function () { dropPhotos(uploaded); throw new Error('__upload__'); })
+        .then(function () {
+          go.textContent = t('publishing');
+          return rpc('create_listing', {
+            p_from_place: form.from.id, p_to_place: form.route === 'intracity' ? form.from.id : form.to.id,
+            p_vehicle_types: codes, p_description: form.desc.trim() || null, p_weight_kg: wt, p_price_amount: pc,
+            p_exclusive: form.excl, p_route_type: form.route, p_photo_paths: uploaded
+          }).catch(function (e) { dropPhotos(uploaded); throw e; });
+        })
+        .then(function () { form = newForm(); toast(t('published')); feedAll = null; mineRows = null; show('mine'); })
+        .catch(function (e) { reset(e.message === '__upload__' ? t('upload_fail') : friendly(e.message)); });
     });
   }
 
-  /* ---------- My listings ---------- */
+  /* ---------- My listings (shipper mode) ---------- */
   function statusOf(l) {
     if (l.status === 'active' && new Date(l.expires_at) > new Date()) return { text: t('st_active', dmy(l.expires_at)), on: true };
     if (l.status === 'closed') return { text: l.close_reason === 'deal' ? t('st_deal') : t('st_closed'), on: false };
@@ -752,7 +959,8 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
     mineRows.forEach(function (l) {
       var st = statusOf(l);
       var c = el('div', 'lc'); c.style.cursor = 'default';
-      var top = el('div', 'row'); top.appendChild(routeNode(l)); top.appendChild(el('span', 'st' + (st.on ? ' on' : ''), st.text)); c.appendChild(top);
+      c.appendChild(cardTop(l));
+      c.appendChild(el('div', null)).appendChild(el('span', 'st' + (st.on ? ' on' : ''), st.text));
       c.appendChild(chipsNode(l));
       if (l.description) c.appendChild(el('div', 'ds', l.description));
       var row = el('div', 'row');
@@ -787,38 +995,29 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
       .catch(function () { mineRows = 'error'; renderMine(); });
   }
 
-  /* ---------- Profile: driver mode, vehicles, routes ---------- */
+  /* ---------- Fleet (driver mode): vehicles and routes ---------- */
   function plateNorm(s) { return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
   function routeTitle(r) {
     var pts = r.driver_route_points || [];
     if (r.name) return r.name;
     return pts.map(function (p) { return pname(p.place); }).join(r.both_ways ? ' ↔ ' : ' → ');
   }
-  function renderProfile() {
-    var body = $('profileBody'); body.textContent = '';
-    if (!inTg) { gateTg(body, 'gate_profile'); return; }
+  function renderFleet() {
+    var body = $('fleetBody'); body.textContent = '';
+    if (!inTg) { gateTg(body, 'gate_fleet'); return; }
     if (!session) { body.appendChild(el('div', 'state', t('logging_in'))); return; }
     if (!profile) { body.appendChild(el('div', 'state', t('loading_profile'))); return; }
-
-    var card = el('div', 'panel'); var dl = el('dl', 'kv');
-    var u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
-    dl.appendChild(el('dt', null, t('p_name'))); dl.appendChild(el('dd', null, profile.full_name || (u ? [u.first_name, u.last_name].filter(Boolean).join(' ') : '—')));
-    dl.appendChild(el('dt', null, t('p_phone'))); dl.appendChild(el('dd', null, profile.phone || '—'));
-    card.appendChild(dl); body.appendChild(card);
-
     if (!isDriver()) {
       gateCard(body, t('drv_h'), t('drv_t'), t('drv_enable'), function () {
-        patch('profiles?id=eq.' + encodeURIComponent(session.user_id), { role: 'both' }).then(function () {
-          profile.role = 'both'; toast(t('drv_on')); renderModeBar(); renderProfile();
-        }).catch(function (e) { toast(friendly(e.message)); });
+        patch('profiles?id=eq.' + encodeURIComponent(session.user_id), { role: 'both' }).then(function () { profile.role = 'both'; toast(t('drv_on')); renderFleet(); })
+          .catch(function (e) { toast(friendly(e.message)); });
       });
       return;
     }
 
-    /* Vehicles */
     var vh = el('div', 'sec-h'); vh.appendChild(el('h2', null, t('my_vehicles')));
     var vb = el('button', 'btn sec sm', showVForm ? t('cancel') : t('add_vehicle')); vb.type = 'button';
-    vb.addEventListener('click', function () { showVForm = !showVForm; vform = { top: null, kid: null, plate: '', brand: '', cap: '' }; renderProfile(); });
+    vb.addEventListener('click', function () { showVForm = !showVForm; vform = { top: null, kid: null, plate: '', brand: '', cap: '' }; renderFleet(); });
     vh.appendChild(vb); body.appendChild(vh);
     if (showVForm) body.appendChild(vehicleForm());
     if (!vehicles.length && !showVForm) body.appendChild(el('div', 'state', t('no_vehicles')));
@@ -826,31 +1025,30 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
       var it = el('div', 'item'); var row = el('div', 'row');
       row.appendChild(el('span', 't', vLabel(v.vehicle_type) + ' · ' + v.plate_number));
       var d = el('button', 'btn sec sm danger', t('del')); d.type = 'button';
-      d.addEventListener('click', function () { d.disabled = true; remove('driver_vehicles?id=eq.' + encodeURIComponent(v.id)).then(function () { toast(t('deleted')); return refreshDriverFeed(); }).then(renderProfile).catch(function (e) { d.disabled = false; toast(friendly(e.message)); }); });
+      d.addEventListener('click', function () { d.disabled = true; remove('driver_vehicles?id=eq.' + encodeURIComponent(v.id)).then(function () { toast(t('deleted')); return refreshDriverFeed(); }).then(renderFleet).catch(function (e) { d.disabled = false; toast(friendly(e.message)); }); });
       row.appendChild(d); it.appendChild(row);
       var meta = [v.brand, v.capacity_kg != null ? fmtKg(Number(v.capacity_kg)) : null].filter(Boolean).join(' · ');
       if (meta) it.appendChild(el('div', 'meta', meta));
       body.appendChild(it);
     });
 
-    /* Routes */
     var rh = el('div', 'sec-h'); rh.appendChild(el('h2', null, t('my_routes')));
     var rb = el('button', 'btn sec sm', showRForm ? t('cancel') : t('add_route')); rb.type = 'button';
-    rb.addEventListener('click', function () { showRForm = !showRForm; rform = { name: '', from: null, to: null, both: true }; renderProfile(); });
+    rb.addEventListener('click', function () { showRForm = !showRForm; rform = { name: '', from: null, to: null, both: true }; renderFleet(); });
     rh.appendChild(rb); body.appendChild(rh);
     if (showRForm) body.appendChild(routeForm());
     if (!routes.length && !showRForm) body.appendChild(el('div', 'state', t('no_routes')));
     routes.forEach(function (r) {
       var it = el('div', 'item'); var row = el('div', 'row');
-      var ttl = el('span', 't', routeTitle(r)); row.appendChild(ttl);
+      row.appendChild(el('span', 't', routeTitle(r)));
       row.appendChild(el('span', 'st' + (r.is_active ? ' on' : ''), r.is_active ? t('r_on') : t('r_off')));
       it.appendChild(row);
       it.appendChild(el('div', 'meta', r.both_ways ? t('both_ways') : t('one_way')));
       var acts = el('div', 'row');
       var tgl = el('button', 'btn sec sm', r.is_active ? t('r_off') : t('r_on')); tgl.type = 'button';
-      tgl.addEventListener('click', function () { tgl.disabled = true; patch('driver_routes?id=eq.' + encodeURIComponent(r.id), { is_active: !r.is_active }).then(refreshDriverFeed).then(renderProfile).catch(function (e) { tgl.disabled = false; toast(friendly(e.message)); }); });
+      tgl.addEventListener('click', function () { tgl.disabled = true; patch('driver_routes?id=eq.' + encodeURIComponent(r.id), { is_active: !r.is_active }).then(refreshDriverFeed).then(renderFleet).catch(function (e) { tgl.disabled = false; toast(friendly(e.message)); }); });
       var dl2 = el('button', 'btn sec sm danger', t('del')); dl2.type = 'button';
-      dl2.addEventListener('click', function () { dl2.disabled = true; remove('driver_routes?id=eq.' + encodeURIComponent(r.id)).then(function () { toast(t('deleted')); return refreshDriverFeed(); }).then(renderProfile).catch(function (e) { dl2.disabled = false; toast(friendly(e.message)); }); });
+      dl2.addEventListener('click', function () { dl2.disabled = true; remove('driver_routes?id=eq.' + encodeURIComponent(r.id)).then(function () { toast(t('deleted')); return refreshDriverFeed(); }).then(renderFleet).catch(function (e) { dl2.disabled = false; toast(friendly(e.message)); }); });
       acts.appendChild(tgl); acts.appendChild(dl2); it.appendChild(acts);
       body.appendChild(it);
     });
@@ -899,15 +1097,15 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
       go.disabled = true;
       post('driver_vehicles', { driver_id: session.user_id, plate_number: plate, vehicle_type: vform.kid || vform.top, brand: vform.brand.trim() || null, capacity_kg: cap })
         .then(function () { showVForm = false; toast(t('v_saved')); return refreshDriverFeed(); })
-        .then(renderProfile)
+        .then(renderFleet)
         .catch(function (e) { go.disabled = false; fail(friendly(e.message)); });
     });
     return p;
   }
   function routeForm() {
     var p = el('div', 'panel');
-    p.appendChild(placePicker(rform, 'from', t('lbl_from')));
-    p.appendChild(placePicker(rform, 'to', t('lbl_to')));
+    p.appendChild(placeField(rform, 'from', t('lbl_from')));
+    p.appendChild(placeField(rform, 'to', t('lbl_to')));
     var seg = el('div', 'seg'); seg.style.marginTop = '16px';
     [[true, t('both_ways')], [false, t('one_way')]].forEach(function (o) {
       var b = el('button', null, o[1]); b.type = 'button'; b.setAttribute('aria-pressed', String(rform.both === o[0]));
@@ -930,17 +1128,31 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
           return remove('driver_routes?id=eq.' + encodeURIComponent(id)).then(function () { throw e; }, function () { throw e; });
         });
       }).then(function () { showRForm = false; toast(t('r_saved')); return refreshDriverFeed(); })
-        .then(renderProfile)
+        .then(renderFleet)
         .catch(function (e) { go.disabled = false; fail(friendly(e.message)); });
     });
     return p;
+  }
+
+  /* ---------- Profile ---------- */
+  function renderProfile() {
+    var body = $('profileBody'); body.textContent = '';
+    if (!inTg) { gateTg(body, 'gate_profile'); return; }
+    if (!session) { body.appendChild(el('div', 'state', t('logging_in'))); return; }
+    if (!profile) { body.appendChild(el('div', 'state', t('loading_profile'))); return; }
+    var card = el('div', 'panel'); var dl = el('dl', 'kv');
+    var u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+    dl.appendChild(el('dt', null, t('p_name'))); dl.appendChild(el('dd', null, profile.full_name || (u ? [u.first_name, u.last_name].filter(Boolean).join(' ') : '—')));
+    dl.appendChild(el('dt', null, t('p_phone'))); dl.appendChild(el('dd', null, profile.phone || '—'));
+    if (profile.rating_count > 0) { dl.appendChild(el('dt', null, t('p_rating'))); dl.appendChild(el('dd', null, '★ ' + Number(profile.rating_avg).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) + ' (' + profile.rating_count + ')')); }
+    card.appendChild(dl); body.appendChild(card);
   }
 
   /* ---------- Look dialog ---------- */
   function openLook() {
     openDlg(function (body) {
       dlgHead(body, el('h3', null, t('look_h')));
-      var pal = root.getAttribute('data-pal'), theme = root.getAttribute('data-theme');
+      var pal = root.getAttribute('data-pal');
       var saved = readLook();
       var m = saved && (saved.theme === 'light' || saved.theme === 'dark' || saved.theme === 'auto') ? saved.theme : 'light';
       body.appendChild(el('div', 'meta', t('look_color')));
@@ -965,16 +1177,71 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
   }
   $('lookBtn').addEventListener('click', openLook);
 
+  /* ---------- Mode switch (shipper / driver), tabs, navigation ---------- */
+  var TABS = {
+    shipper: [['create', 'tab_create', P.plus], ['mine', 'tab_mine', P.list], ['profile', 'tab_profile', P.user]],
+    driver: [['feed', 'tab_feed', P.lines], ['fleet', 'tab_fleet', P.truck], ['profile', 'tab_profile', P.user]]
+  };
+  function renderModeSw() {
+    var box = $('modeSw'); box.textContent = '';
+    [['shipper', t('mode_ship')], ['driver', t('mode_drv')]].forEach(function (o) {
+      var b = el('button', null, o[1]); b.type = 'button'; b.setAttribute('data-mode', o[0]); b.setAttribute('aria-pressed', String(uiMode === o[0]));
+      b.addEventListener('click', function () { userTouched = true; setUiMode(o[0]); });
+      box.appendChild(b);
+    });
+  }
+  function renderTabs() {
+    var box = $('tabsIn'); box.textContent = '';
+    TABS[uiMode].forEach(function (tb) {
+      var b = el('button'); b.type = 'button'; b.setAttribute('data-tab', tb[0]);
+      b.appendChild(icon(tb[2], 22)); b.appendChild(el('span', null, t(tb[1])));
+      if (tb[0] === current) b.setAttribute('aria-current', 'page');
+      b.addEventListener('click', function () { userTouched = true; show(tb[0]); });
+      box.appendChild(b);
+    });
+  }
+  function setUiMode(m) {
+    if (m === uiMode) return;
+    function apply() {
+      uiMode = m; uiSaved = true;
+      try { localStorage.setItem(UI_KEY, m); } catch (e) {}
+      renderModeSw(); show(m === 'driver' ? 'feed' : 'create');
+    }
+    if (m === 'driver' && inTg && session && profile && !isDriver()) {
+      patch('profiles?id=eq.' + encodeURIComponent(session.user_id), { role: 'both' })
+        .then(function () { profile.role = 'both'; toast(t('drv_on')); apply(); })
+        .catch(function (e) { toast(friendly(e.message)); });
+    } else apply();
+  }
+  function show(name) {
+    if (!TABS[uiMode].some(function (tb) { return tb[0] === name; })) name = TABS[uiMode][0][0];
+    current = name;
+    ['feed', 'create', 'mine', 'fleet', 'profile'].forEach(function (n) { $('v-' + n).hidden = n !== name; });
+    renderTabs();
+    window.scrollTo(0, 0);
+    if (name === 'feed') {
+      renderFeedModeBar();
+      if (!feedAll || feedAll === 'error') loadFeed(); else renderFeed();
+      if (feedMode === 'me' && (feedMe === null || feedMe === 'error')) loadMe();
+    }
+    if (name === 'create') renderCreate();
+    if (name === 'mine') { if (!mineRows || mineRows === 'error') loadMine(); else renderMine(); }
+    if (name === 'fleet') renderFleet();
+    if (name === 'profile') renderProfile();
+  }
+
   /* ---------- Language switching ---------- */
   function applyStatic() {
     document.documentElement.lang = lang;
     document.title = t('title');
     [].forEach.call(document.querySelectorAll('[data-i18n]'), function (n) { n.textContent = t(n.getAttribute('data-i18n')); });
     [].forEach.call(document.querySelectorAll('[data-i18n-aria]'), function (n) { n.setAttribute('aria-label', t(n.getAttribute('data-i18n-aria'))); });
+    $('pickDlg').setAttribute('aria-label', t('pick_choose'));
     [].forEach.call(document.querySelectorAll('#langBar button'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === lang)); });
   }
   function renderAll() {
-    applyStatic(); closeDlg(); renderModeBar(); renderFilters(); renderFeed(); renderCreate(); renderMine(); renderProfile();
+    applyStatic(); closeDlg(); closePick(); renderModeSw(); renderTabs(); renderFeedModeBar(); renderFilters();
+    renderFeed(); renderCreate(); renderMine(); renderFleet(); renderProfile();
   }
   [].forEach.call(document.querySelectorAll('#langBar button'), function (b) {
     b.addEventListener('click', function () {
@@ -986,42 +1253,31 @@ dialog dt{color:var(--tx3)}dialog dd{margin:0;word-break:break-word}
     });
   });
 
-  /* ---------- Navigation ---------- */
-  function show(name) {
-    current = name;
-    ['feed', 'create', 'mine', 'profile'].forEach(function (n) { $('v-' + n).hidden = n !== name; });
-    [].forEach.call(document.querySelectorAll('nav.tabs button'), function (b) { if (b.getAttribute('data-tab') === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
-    window.scrollTo(0, 0);
-    if (name === 'feed') { if (!feedAll || feedAll === 'error') loadFeed(); else renderFeed(); if (mode === 'me' && (feedMe === null || feedMe === 'error')) loadMe(); }
-    if (name === 'create') renderCreate();
-    if (name === 'mine') { if (!mineRows || mineRows === 'error') loadMine(); else renderMine(); }
-    if (name === 'profile') renderProfile();
-  }
-  [].forEach.call(document.querySelectorAll('nav.tabs button'), function (b) { b.addEventListener('click', function () { show(b.getAttribute('data-tab')); }); });
-
   /* ---------- Boot ---------- */
   if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
-  applyStatic(); renderFilters(); renderProfile();
+  applyStatic(); renderModeSw(); renderFilters();
+  show(uiMode === 'driver' ? 'feed' : 'create');
   rest('vehicle_types?select=code,name_ru,name_uz,max_weight_kg,parent_code,sort_order&is_active=eq.true&order=sort_order')
-    .then(function (rows) { types = rows; indexTypes(); renderFilters(); renderFeed(); if (current === 'create') renderCreate(); if (current === 'profile') renderProfile(); })
+    .then(function (rows) { types = rows; indexTypes(); renderFilters(); renderFeed(); if (current === 'create') renderCreate(); if (current === 'fleet') renderFleet(); })
     .catch(function () {});
-  loadFeed();
+  rest('place_types?select=code,name_ru,name_uz').then(function (rows) { rows.forEach(function (x) { ptypes[x.code] = x; }); }).catch(function () {});
 
   if (inTg) {
     login().then(function () {
-      return rest('profiles?select=full_name,phone,role,language&id=eq.' + encodeURIComponent(session.user_id)).then(function (rows) { profile = rows[0] || { phone: null, role: 'shipper', language: 'ru' }; });
+      return rest('profiles?select=full_name,phone,role,language,rating_avg,rating_count&id=eq.' + encodeURIComponent(session.user_id)).then(function (rows) { profile = rows[0] || { phone: null, role: 'shipper', language: 'ru' }; });
     }).then(function () {
       /* Uzbek if either Telegram or the saved profile says so; a choice made in the app always wins */
-      if (!langSaved && profile.language === 'uz' && lang !== 'uz') { lang = 'uz'; applyStatic(); renderFilters(); }
+      if (!langSaved && profile.language === 'uz' && lang !== 'uz') { lang = 'uz'; applyStatic(); renderModeSw(); renderFilters(); }
       return loadDriver();
     }).then(function () {
-      if (!modeSet) mode = hasDriverSetup() ? 'me' : 'all';
-      renderModeBar(); renderFeed(); renderCreate(); renderProfile();
-      if (mode === 'me') loadMe();
-      if (current === 'mine') loadMine();
+      if (!feedModeSet) feedMode = hasDriverSetup() ? 'me' : 'all';
+      /* A person registered as a driver starts in driver mode, unless they already chose or tapped something */
+      if (!uiSaved && !userTouched && profile.role === 'driver') { uiMode = 'driver'; renderModeSw(); show('feed'); }
+      else show(current);
+      if (current === 'feed' && feedMode === 'me') loadMe();
     }).catch(function () { toast(t('login_fail')); });
   } else {
-    renderModeBar();
+    renderFeedModeBar();
   }
 })();
 </script>
