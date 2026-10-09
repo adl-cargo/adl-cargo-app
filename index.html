@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-pal="graphite" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -186,8 +186,8 @@ footer a:hover{text-decoration:underline;text-underline-offset:4px}
 
 <div class="tools"><div class="pill" role="group" aria-label="Оформление страницы">
   <span class="lbl">Цвет</span>
-  <button class="sw" type="button" data-pal="kraft" aria-label="Картон" aria-pressed="true"><i style="background:#84643D"></i></button>
-  <button class="sw" type="button" data-pal="graphite" aria-label="Графит" aria-pressed="false"><i style="background:#1C1A17"></i></button>
+  <button class="sw" type="button" data-pal="kraft" aria-label="Картон" aria-pressed="false"><i style="background:#84643D"></i></button>
+  <button class="sw" type="button" data-pal="graphite" aria-label="Графит" aria-pressed="true"><i style="background:#1C1A17"></i></button>
   <button class="sw" type="button" data-pal="pine" aria-label="Хвоя" aria-pressed="false"><i style="background:#1F4D3A"></i></button>
   <button class="sw" type="button" data-pal="bordeaux" aria-label="Бордо" aria-pressed="false"><i style="background:#7B2D3B"></i></button>
   <button class="sw" type="button" data-pal="navy" aria-label="Морская синь" aria-pressed="false"><i style="background:#1F3A5F"></i></button>
@@ -314,7 +314,7 @@ footer a:hover{text-decoration:underline;text-underline-offset:4px}
 (function(){
   var root=document.documentElement, KEY='adlcargo-look';
   var pals=['kraft','graphite','pine','bordeaux','navy'];
-  var st={pal:'kraft',theme:(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'};
+  var st={pal:'graphite',theme:'light'};
   try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&pals.indexOf(s.pal)>-1)st.pal=s.pal;if(s&&(s.theme==='light'||s.theme==='dark'))st.theme=s.theme}catch(e){}
   function apply(){
     root.setAttribute('data-pal',st.pal);root.setAttribute('data-theme',st.theme);
