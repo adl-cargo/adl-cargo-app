@@ -652,7 +652,7 @@ function showLogin(msg, noAuto) {
   s.setAttribute('data-telegram-login', BOT);
   s.setAttribute('data-size', 'large');
   s.setAttribute('data-radius', '10');
-  s.setAttribute('data-onauth', 'onTelegramAuth(user)');
+  s.setAttribute('data-auth-url', location.origin + location.pathname);
   s.setAttribute('data-request-access', 'write');
   box.appendChild(s);
 }
@@ -662,6 +662,16 @@ function boot() {
   try { th = localStorage.getItem('adlcargo-admin-theme') || 'light'; } catch (e) {}
   document.documentElement.setAttribute('data-theme', th === 'dark' ? 'dark' : 'light');
   if (TGAPP) { try { TGAPP.ready(); TGAPP.expand(); } catch (e) {} }
+  // Telegram Login Widget returns here with the signed data in the query string
+  var qp = new URLSearchParams(location.search);
+  if (qp.get('hash') && qp.get('id') && qp.get('auth_date')) {
+    var wd = {};
+    qp.forEach(function (v, k) { wd[k] = v; });
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
+    $('#app').innerHTML = '<div class="login"><div class="card"><div class="spin"></div><div class="mut">Входим…</div></div></div>';
+    doLogin({ widget: wd });
+    return;
+  }
   var raw = null;
   try { raw = sessionStorage.getItem('adm'); } catch (e) {}
   if (raw) {
