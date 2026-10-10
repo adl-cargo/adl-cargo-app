@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="ru" data-pal="graphite" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; img-src 'self' data: https:; frame-src https://oauth.telegram.org https://telegram.org; base-uri 'none'; form-action 'none'">
+<title>ADL Cargo · Админ-панель</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html[data-theme=light]{--bg:#F4F2EE;--surf:#FFFFFF;--surf2:#EBE8E2;--tx:#1C1A17;--tx2:#403D37;--tx3:#5F5B54;--line:rgba(28,26,23,.13);--acc:#1C1A17;--accink:#F4F2EE;--acct:#84643D;--soft:#E3D3B1;--ok:#1E6B3F;--okbg:#DCEFE3;--warn:#8A5200;--warnbg:#F6E6C6;--bad:#A8261D;--badbg:#F7DAD6;--shadow:rgba(40,30,10,.12)}
+html[data-theme=dark]{--bg:#131211;--surf:#1C1A18;--surf2:#262320;--tx:#F4F2EE;--tx2:#D3CFC6;--tx3:#A09B90;--line:rgba(244,242,238,.14);--acc:#F4F2EE;--accink:#131211;--acct:#C29C67;--soft:#3A3226;--ok:#8FD0A8;--okbg:#1B3326;--warn:#E8B766;--warnbg:#3A2C12;--bad:#FFB4AB;--badbg:#42201C;--shadow:rgba(0,0,0,.5)}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:'Geologica',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
+h1{font-size:22px}h2{font-size:17px}h3{font-size:16px}
+.mut{color:var(--tx3)}
+.pad{padding:24px}
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;align-self:start;height:100vh;padding:18px 12px;border-right:1px solid var(--line);background:var(--surf);display:flex;flex-direction:column;gap:4px;overflow:auto}
+.brand{display:flex;align-items:baseline;gap:6px;padding:4px 10px 14px;font-weight:700;font-size:20px;letter-spacing:-.02em}
+.brand small{font-size:12px;font-weight:500;color:var(--tx3);letter-spacing:0}
+.nav a{display:block;padding:9px 12px;border-radius:10px;text-decoration:none;color:var(--tx2);font-weight:500}
+.nav a:hover{background:var(--surf2)}
+.nav a.on{background:var(--acc);color:var(--accink)}
+.me{margin-top:auto;padding:12px 10px 4px;border-top:1px solid var(--line);font-size:13px}
+.me b{display:block;font-weight:600}
+.me .btns{display:flex;gap:6px;margin-top:8px}
+.main{padding:22px;max-width:1120px;width:100%}
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.card{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+.stat{display:block;text-decoration:none;background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+a.stat:hover{border-color:var(--acct)}
+.stat .n{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.stat .l{color:var(--tx3);font-size:13px}
+.stat.warn{background:var(--warnbg);border-color:transparent}
+.stat.warn .n{color:var(--warn)}
+.row{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;text-decoration:none}
+a.row:hover{border-color:var(--acct)}
+.rmain{min-width:0;flex:1}
+.rmain b{font-weight:600}
+.rmeta{color:var(--tx3);font-size:13px;margin-top:2px;word-break:break-word}
+.rside{display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0}
+.bdg{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:500;background:var(--surf2);color:var(--tx2);white-space:nowrap}
+.bdg.ok{background:var(--okbg);color:var(--ok)}
+.bdg.warn{background:var(--warnbg);color:var(--warn)}
+.bdg.bad{background:var(--badbg);color:var(--bad)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--surf);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:500;text-decoration:none}
+.btn:hover{border-color:var(--tx3)}
+.btn.pri{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.sm{padding:5px 10px;font-size:13px;border-radius:8px}
+.btn[disabled]{opacity:.45;cursor:default}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.inp{width:100%;background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:9px 12px;outline:none}
+.inp:focus{border-color:var(--acct)}
+textarea.inp{resize:vertical;min-height:70px}
+label{display:block;font-size:13px;color:var(--tx3);margin:12px 0 4px}
+.bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.bar .inp{flex:1;min-width:180px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tab{border:1px solid var(--line);background:var(--surf);border-radius:99px;padding:6px 13px;cursor:pointer;font-size:14px}
+.tab.on{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+.pager{display:flex;align-items:center;justify-content:center;gap:12px;margin:14px 0}
+.kv{display:grid;grid-template-columns:150px minmax(0,1fr);gap:6px 14px;font-size:14px}
+.kv dt{color:var(--tx3)}.kv dd{margin:0;word-break:break-word}
+.pre{white-space:pre-wrap;word-break:break-word}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--surf2);padding:1px 6px;border-radius:6px;word-break:break-all}
+.back{display:inline-block;margin-bottom:10px;color:var(--tx3);text-decoration:none}
+.mback{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal{background:var(--surf);border-radius:16px;padding:20px;width:100%;max-width:460px;max-height:90vh;overflow:auto;box-shadow:0 20px 60px var(--shadow)}
+.mact{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--acct);border-radius:50%;animation:sp 1s linear infinite;margin:14px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--acc);color:var(--accink);padding:10px 16px;border-radius:12px;z-index:60;max-width:90vw;box-shadow:0 8px 30px var(--shadow)}
+.toast.bad{background:var(--bad);color:#fff}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login .card{max-width:380px;width:100%;text-align:center;padding:28px 22px}
+.login .logo{font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.login .logo small{display:block;font-size:15px;font-weight:500;color:var(--tx3);margin-top:2px}
+.err{color:var(--bad);margin-top:14px;font-size:14px}
+@media(max-width:860px){
+.shell{grid-template-columns:minmax(0,1fr)}
+.side{position:static;height:auto;flex-direction:row;align-items:center;overflow-x:auto;padding:8px 10px;border-right:0;border-bottom:1px solid var(--line);gap:4px}
+.brand,.me .who{display:none}
+.nav{display:flex;gap:4px}
+.nav a{white-space:nowrap;padding:7px 12px}
+.me{margin:0 0 0 auto;padding:0;border:0}
+.me .btns{margin:0}
+.main{padding:14px}
+.kv{grid-template-columns:110px minmax(0,1fr)}
+.row{flex-direction:column;gap:8px}
+.rside{flex-direction:row;align-items:center;flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function () {
+'use strict';
+
+var SB = 'https://dwzdylyalwmfmjzhmmjy.supabase.co';
+var API = SB + '/functions/v1/admin-api';
+var BOT = 'adl_cargo_bot';
+var TGAPP = (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData) ? Telegram.WebApp : null;
+
+var LV = { support: 1, moderator: 2, admin: 3, owner: 4 };
+var RL = { owner: 'Владелец', admin: 'Админ', moderator: 'Модератор', support: 'Поддержка' };
+var PR = { shipper: 'Заказчик', driver: 'Водитель', both: 'Заказчик и водитель' };
+var LS = { active: ['Активно', 'ok'], closed: ['Закрыто', ''], expired: ['Истекло', ''], removed: ['Убрано', 'bad'] };
+var RR = { spam: 'Спам', fraud: 'Мошенничество', wrong_info: 'Неверные данные', inappropriate: 'Неприемлемое', other: 'Другое' };
+var ERR = {
+  network: 'Нет связи с сервером',
+  unauthorized: 'Сессия недействительна, войдите снова',
+  session_revoked: 'Доступ отозван',
+  session_expired: 'Сессия истекла, войдите снова',
+  forbidden: 'Недостаточно прав',
+  forbidden_origin: 'Запрос с чужого адреса',
+  not_admin: 'Этот аккаунт не в списке сотрудников',
+  invalid_signature: 'Подпись Telegram недействительна или устарела. Откройте панель заново',
+  too_many_attempts: 'Слишком много попыток, подождите минуту',
+  not_configured: 'Сервер не настроен',
+  permanent_ban_requires_admin: 'Постоянный бан доступен только админу и выше',
+  ban_too_long_for_role: 'Модератор может банить не больше чем на 30 дней',
+  cannot_ban_staff: 'Нельзя банить сотрудников',
+  cannot_target_self: 'Нельзя применить это к самому себе',
+  last_owner: 'Нельзя убрать последнего владельца',
+  not_found: 'Не найдено',
+  not_found_or_already_removed: 'Не найдено или уже убрано',
+  not_removed_by_moderation: 'Объявление убрано не модератором, вернуть нельзя',
+  bad_reason: 'Укажите причину (от 3 символов)',
+  bad_days: 'Некорректный срок',
+  bad_body: 'Заметка пустая или слишком длинная',
+  bad_note: 'Некорректный комментарий',
+  bad_role: 'Некорректная роль',
+  confirmation_not_ready: 'Подтверждение не готово',
+  confirmation_delivery_failed: 'Не удалось отправить подтверждение в Telegram',
+  unknown_setting: 'Такой настройки нет',
+  profile_not_found: 'У пользователя нет профиля: пусть сначала откроет бота',
+  server_error: 'Ошибка сервера'
+};
+
+var S = null;
+var lastAct = Date.now();
+var timers = [];
+
+function $(s, el) { return (el || document).querySelector(s); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function can(n) { return ((S && LV[S.role]) || 0) >= n; }
+function dt(iso) { return iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; }
+function uname(p) { return p ? (p.full_name || (p.telegram_username ? '@' + p.telegram_username : 'Без имени')) : '—'; }
+function pn(p) { return p ? (p.name_ru || p.name_uz_latn || '?') : '?'; }
+function stars(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
+function money(n) { return n == null ? 'договорная' : Number(n).toLocaleString('ru-RU') + ' сум'; }
+function badge(t, k) { return '<span class="bdg ' + (k || '') + '">' + esc(t) + '</span>'; }
+function errText(e) { return (e && ERR[e.code]) || (e && e.message && !e.code ? e.message : 'Ошибка: ' + ((e && e.code) || 'неизвестная')); }
+function mkErr(code, status) { var e = new Error(code); e.code = code; e.status = status; return e; }
+
+// ---------- API ----------
+async function api(action, params) {
+  var res;
+  try {
+    var headers = { 'Content-Type': 'application/json' };
+    if (S && S.token) headers.Authorization = 'Bearer ' + S.token;
+    res = await fetch(API, { method: 'POST', headers: headers, body: JSON.stringify(Object.assign({}, params || {}, { action: action })) });
+  } catch (e) { throw mkErr('network', 0); }
+  var j = {};
+  try { j = await res.json(); } catch (e) {}
+  if (!res.ok) {
+    if (res.status === 401 && action !== 'login') logout(ERR[j.error] || ERR.unauthorized);
+    throw mkErr(j.error || 'server_error', res.status);
+  }
+  return j.data;
+}
+
+// A dangerous action answers with pending_confirmation: wait for the button in the bot, then execute.
+async function act(action, params) {
+  var r = await api(action, params);
+  if (r && r.pending_confirmation) return waitConfirm(r.pending_confirmation);
+  return r;
+}
+
+async function waitConfirm(pc) {
+  var cancelled = false;
+  var m = modal('<h3>Подтвердите в Telegram</h3><p class="mut">Я отправил сообщение с кнопками в бота @' + BOT + '. Нажмите «Подтвердить» там, и действие выполнится автоматически. Запрос действует 10 минут.</p><div class="spin"></div><div class="mact"><button class="btn" data-x="no">Отмена</button></div>');
+  m.dataset.lock = '1';
+  m.addEventListener('click', function (e) { if (e.target.closest('[data-x]')) { cancelled = true; closeModal(); } });
+  var end = new Date(pc.expires_at).getTime();
+  while (!cancelled && Date.now() < end + 5000) {
+    await sleep(2000);
+    if (cancelled) break;
+    var st;
+    try { st = await api('confirmation.status', { id: pc.id }); } catch (e) { continue; }
+    if (st.status === 'confirmed') { closeModal(); return api('confirmation.execute', { id: pc.id }); }
+    if (st.status === 'rejected') { closeModal(); throw new Error('Действие отклонено в боте'); }
+    if (st.status === 'expired') { closeModal(); throw new Error('Время подтверждения истекло'); }
+  }
+  if (cancelled) throw new Error('Отменено');
+  closeModal();
+  throw new Error('Время подтверждения истекло');
+}
+
+async function guard(fn, okMsg) {
+  try { await fn(); if (okMsg) toast(okMsg); route(); }
+  catch (e) { if (e.message === 'Отменено') return; toast(errText(e), true); }
+}
+
+// ---------- UI helpers ----------
+function modal(html) {
+  closeModal();
+  var m = document.createElement('div');
+  m.className = 'mback';
+  m.innerHTML = '<div class="modal" role="dialog">' + html + '</div>';
+  document.body.appendChild(m);
+  m.addEventListener('click', function (e) { if (e.target === m && !m.dataset.lock) closeModal(); });
+  return m;
+}
+function closeModal() { document.querySelectorAll('.mback').forEach(function (x) { x.remove(); }); }
+function toast(msg, bad) {
+  var t = document.createElement('div');
+  t.className = 'toast' + (bad ? ' bad' : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function () { t.remove(); }, bad ? 5000 : 2500);
+}
+function ask(title, body, okText, danger) {
+  return new Promise(function (resolve) {
+    var m = modal('<h3>' + esc(title) + '</h3>' + body + '<div class="mact"><button class="btn" data-x="no">Отмена</button><button class="btn ' + (danger ? 'danger' : 'pri') + '" data-x="ok">' + esc(okText || 'Готово') + '</button></div>');
+    m.dataset.lock = '1';
+    m.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-x]');
+      if (!b) return;
+      if (b.dataset.x === 'ok') {
+        var v = {};
+        m.querySelectorAll('[name]').forEach(function (i) { v[i.name] = i.value; });
+        closeModal(); resolve(v);
+      } else { closeModal(); resolve(null); }
+    });
+    var f = m.querySelector('[name]'); if (f) f.focus();
+  });
+}
+function tabs(items, cur, key) {
+  return '<div class="tabs">' + items.map(function (it) {
+    return '<button class="tab' + (it[0] === cur ? ' on' : '') + '" data-do="tab" data-k="' + key + '" data-v="' + esc(it[0]) + '">' + esc(it[1]) + '</button>';
+  }).join('') + '</div>';
+}
+function pager(res, qs) {
+  var page = +qs.get('page') || 1;
+  var pages = Math.max(1, Math.ceil(res.total / res.size));
+  if (pages <= 1) return '';
+  return '<div class="pager"><button class="btn sm" data-do="page" data-p="' + (page - 1) + '"' + (page <= 1 ? ' disabled' : '') + '>←</button><span class="mut">' + page + ' / ' + pages + ' · всего ' + res.total + '</span><button class="btn sm" data-do="page" data-p="' + (page + 1) + '"' + (page >= pages ? ' disabled' : '') + '>→</button></div>';
+}
+function searchBar(key, val, ph) {
+  return '<div class="bar"><input class="inp" id="q-' + key + '" data-enter="fsearch" data-key="' + key + '" placeholder="' + esc(ph) + '" value="' + esc(val) + '"><button class="btn pri" data-do="fsearchbtn" data-key="' + key + '">Найти</button></div>';
+}
+function empty(t) { return '<div class="card mut">' + esc(t) + '</div>'; }
+function nav(upd, path) {
+  var raw = location.hash.slice(1) || '/dashboard';
+  var parts = raw.split('?');
+  var qs = new URLSearchParams(parts[1] || '');
+  Object.keys(upd).forEach(function (k) { if (upd[k] === '' || upd[k] == null) qs.delete(k); else qs.set(k, upd[k]); });
+  var s = qs.toString();
+  var next = '#' + (path || parts[0]) + (s ? '?' + s : '');
+  if (next === location.hash) route(); else location.hash = next;
+}
+function notesBlock(type, id, items) {
+  return '<div class="card"><h2>Заметки</h2>' +
+    (items.length ? items.map(function (n) { return '<div class="rmeta" style="margin-top:10px"><span class="mut">' + dt(n.created_at) + '</span><div class="pre" style="color:var(--tx)">' + esc(n.body) + '</div></div>'; }).join('') : '<p class="mut">Пока нет заметок</p>') +
+    '<label>Новая заметка</label><textarea class="inp" id="nbody" maxlength="2000"></textarea>' +
+    '<div class="actions"><button class="btn pri" data-do="noteadd" data-t="' + type + '" data-id="' + esc(id) + '">Добавить</button></div></div>';
+}
+
+// ---------- views ----------
+async function vDash(main) {
+  var d = await api('dashboard');
+  var stale = await api('listings.list', { stale: true, size: 5 });
+  main.innerHTML =
+    '<div class="head"><h1>Обзор</h1></div><div class="grid">' +
+    '<a class="stat" href="#/users"><div class="n">' + d.users + '</div><div class="l">Пользователей · +' + d.users_7d + ' за 7 дней</div></a>' +
+    '<a class="stat" href="#/users?blocked=1"><div class="n">' + d.users_blocked + '</div><div class="l">Заблокировано</div></a>' +
+    '<a class="stat" href="#/listings?f=active"><div class="n">' + d.listings_active + '</div><div class="l">Активных объявлений · +' + d.listings_24h + ' за сутки</div></a>' +
+    '<a class="stat' + (d.listings_stale_30m ? ' warn' : '') + '" href="#/listings?f=stale"><div class="n">' + d.listings_stale_30m + '</div><div class="l">Без звонков 30+ минут</div></a>' +
+    '<a class="stat' + (d.reports_open ? ' warn' : '') + '" href="#/reports"><div class="n">' + d.reports_open + '</div><div class="l">Открытых жалоб</div></a>' +
+    '<a class="stat" href="#/ratings"><div class="n">' + d.ratings + '</div><div class="l">Отзывов · скрыто ' + d.ratings_hidden + '</div></a></div>' +
+    '<div class="head"><h2>Нужно обзвонить (без звонков 30+ минут)</h2><a class="btn sm" href="#/listings?f=stale">Все</a></div>' +
+    (stale.items.length ? stale.items.map(listingRow).join('') : empty('Таких объявлений нет'));
+}
+
+function listingRow(l) {
+  var rt = l.route_type === 'intracity' ? pn(l.from_place) + ' (по городу)' : pn(l.from_place) + ' → ' + pn(l.to_place);
+  var types = (l.listing_vehicle_types || []).map(function (x) { return x.vehicle_type; }).join(', ');
+  var st = LS[l.status] || [l.status, ''];
+  return '<a class="row" href="#/listings/' + l.id + '"><div class="rmain"><b>#' + l.id + ' ' + esc(rt) + '</b><div class="rmeta">' +
+    esc(types) + (l.weight_kg ? ' · ' + Number(l.weight_kg).toLocaleString('ru-RU') + ' кг' : '') + ' · ' + esc(money(l.price_amount)) +
+    ' · звонков: ' + l.contact_count + '<br>' + esc(uname(l.author)) + ' · ' + dt(l.created_at) + '</div></div><div class="rside">' +
+    badge(st[0], st[1]) + (l.exclusive_vehicle ? badge('Вся машина', 'warn') : '') + '</div></a>';
+}
+
+async function vUsers(main, id, qs) {
+  if (id) return vUser(main, id);
+  var q = qs.get('q') || '', blocked = qs.get('blocked') === '1';
+  var res = await api('users.list', { q: q, blocked: blocked || undefined, page: +qs.get('page') || 1 });
+  main.innerHTML = '<div class="head"><h1>Пользователи</h1></div>' +
+    searchBar('q', q, can(2) ? 'Имя, @username, телефон или Telegram ID' : 'Имя, @username или Telegram ID') +
+    tabs([['', 'Все'], ['1', 'Заблокированные']], blocked ? '1' : '', 'blocked') +
+    (res.items.length ? res.items.map(function (u) {
+      return '<a class="row" href="#/users/' + u.id + '"><div class="rmain"><b>' + esc(u.full_name || 'Без имени') + '</b> <span class="mut">' + (u.telegram_username ? '@' + esc(u.telegram_username) : '') + '</span>' +
+        '<div class="rmeta">' + esc(u.phone || 'нет телефона') + ' · ' + esc(PR[u.role] || u.role) + ' · ' + dt(u.created_at) + '</div></div><div class="rside">' +
+        (u.is_blocked ? badge('Заблокирован', 'bad') : '') + (u.rating_count ? badge('★ ' + u.rating_avg + ' (' + u.rating_count + ')') : '') + '</div></a>';
+    }).join('') : empty('Никого не нашли')) + pager(res, qs);
+}
+
+async function vUser(main, id) {
+  var r = await api('users.get', { id: id });
+  var p = r.profile;
+  var staff = r.staff;
+  var banInfo = p.is_blocked ? badge('Заблокирован' + (p.banned_until ? ' до ' + dt(p.banned_until) : ' навсегда'), 'bad') : badge('Активен', 'ok');
+  var h = '<a class="back" href="#/users">← Пользователи</a><div class="head"><h1>' + esc(p.full_name || 'Без имени') + '</h1><div>' + banInfo + (staff ? ' ' + badge(RL[staff.role] + (staff.is_active ? '' : ' (отключён)'), 'warn') : '') + '</div></div>';
+  h += '<div class="card"><dl class="kv">' +
+    '<dt>Telegram</dt><dd>' + (p.telegram_username ? '@' + esc(p.telegram_username) : '—') + ' · ID <code>' + esc(p.telegram_id) + '</code></dd>' +
+    '<dt>Телефон</dt><dd>' + esc(p.phone || '—') + '</dd>' +
+    '<dt>Роль в сервисе</dt><dd>' + esc(PR[p.role] || p.role) + '</dd>' +
+    '<dt>Язык</dt><dd>' + esc(p.language) + '</dd>' +
+    '<dt>Рейтинг</dt><dd>' + (p.rating_count ? '★ ' + p.rating_avg + ' (' + p.rating_count + ')' : 'нет оценок') + '</dd>' +
+    '<dt>Регистрация</dt><dd>' + dt(p.created_at) + '</dd>' +
+    (r.balance ? '<dt>Баланс</dt><dd>' + esc(r.balance.amount) + ' сум</dd>' : '') +
+    (p.is_blocked ? '<dt>Причина бана</dt><dd class="pre">' + esc(p.blocked_reason || '—') + '</dd>' : '') +
+    '</dl>';
+  if (can(2)) {
+    h += '<div class="actions">' + (p.is_blocked
+      ? '<button class="btn pri" data-do="unban" data-id="' + p.id + '">Разбанить</button>'
+      : '<button class="btn danger" data-do="ban" data-id="' + p.id + '">Забанить</button>') + '</div>';
+  }
+  h += '</div>';
+  if (can(4)) {
+    h += '<div class="card"><h2>Сотрудник</h2><p class="mut">Смена роли подтверждается кнопкой в боте.</p><div class="bar"><select class="inp" id="roleSel">' +
+      ['support', 'moderator', 'admin', 'owner'].map(function (k) { return '<option value="' + k + '"' + (staff && staff.role === k ? ' selected' : (!staff && k === 'moderator' ? ' selected' : '')) + '>' + RL[k] + '</option>'; }).join('') +
+      '</select><button class="btn pri" data-do="setrole" data-id="' + p.id + '">' + (staff ? 'Сменить роль' : 'Назначить') + '</button>' +
+      (staff ? '<button class="btn danger" data-do="staffactive" data-id="' + p.id + '" data-v="' + (staff.is_active ? '0' : '1') + '">' + (staff.is_active ? 'Отключить доступ' : 'Включить доступ') + '</button>' : '') + '</div></div>';
+  }
+  h += '<div class="card"><h2>Объявления (' + r.listings.length + ')</h2>' + (r.listings.length ? r.listings.map(function (l) {
+    var st = LS[l.status] || [l.status, ''];
+    return '<a class="row" href="#/listings/' + l.id + '"><div class="rmain"><b>#' + l.id + '</b> <span class="mut">' + dt(l.created_at) + ' · звонков: ' + l.contact_count + '</span></div><div class="rside">' + badge(st[0], st[1]) + '</div></a>';
+  }).join('') : '<p class="mut">Нет</p>') + '</div>';
+  h += '<div class="card"><h2>Жалобы на пользователя (' + r.reports_against.length + ')</h2>' + (r.reports_against.length ? r.reports_against.map(function (x) {
+    return '<div class="rmeta" style="margin-top:8px"><b style="color:var(--tx)">' + esc(RR[x.reason] || x.reason) + '</b> · ' + dt(x.created_at) + ' · ' + esc(x.status) + (x.details ? '<div class="pre">' + esc(x.details) + '</div>' : '') + '</div>';
+  }).join('') : '<p class="mut">Нет</p>') + '</div>';
+  if (r.vehicles.length) {
+    h += '<div class="card"><h2>Транспорт</h2>' + r.vehicles.map(function (v) {
+      return '<div class="rmeta" style="margin-top:8px"><b style="color:var(--tx)">' + esc(v.plate_number) + '</b> · ' + esc(v.vehicle_type) + (v.brand ? ' · ' + esc(v.brand) : '') + (v.company_name ? ' · ' + esc(v.company_name) : '') + (v.is_primary ? ' · основной' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  h += notesBlock('user', p.id, r.notes);
+  main.innerHTML = h;
+}
+
+async function vListings(main, id, qs) {
+  if (id) return vListing(main, id);
+  var f = qs.get('f') || '';
+  var p = { page: +qs.get('page') || 1 };
+  if (f === 'stale') p.stale = true; else if (f) p.status = f;
+  if (qs.get('author')) p.author_id = qs.get('author');
+  var res = await api('listings.list', p);
+  main.innerHTML = '<div class="head"><h1>Объявления</h1></div>' +
+    tabs([['', 'Все'], ['active', 'Активные'], ['closed', 'Закрытые'], ['expired', 'Истекшие'], ['removed', 'Убранные'], ['stale', 'Без звонков 30+ мин']], f, 'f') +
+    (res.items.length ? res.items.map(listingRow).join('') : empty('Ничего нет')) + pager(res, qs);
+}
+
+async function vListing(main, id) {
+  var r = await api('listings.get', { id: +id });
+  var l = r.listing;
+  var rt = l.route_type === 'intracity' ? pn(l.from_place) + ' (по городу)' : pn(l.from_place) + ' → ' + pn(l.to_place);
+  var st = LS[l.status] || [l.status, ''];
+  var h = '<a class="back" href="#/listings">← Объявления</a><div class="head"><h1>#' + l.id + ' ' + esc(rt) + '</h1><div>' + badge(st[0], st[1]) + '</div></div>';
+  h += '<div class="card"><dl class="kv">' +
+    '<dt>Автор</dt><dd>' + (l.author ? '<a href="#/users/' + l.author.id + '">' + esc(uname(l.author)) + '</a>' + (l.author.is_blocked ? ' ' + badge('Заблокирован', 'bad') : '') + '<br><span class="mut">' + esc(l.author.phone || '') + '</span>' : '—') + '</dd>' +
+    '<dt>Машины</dt><dd>' + esc((l.listing_vehicle_types || []).map(function (x) { return x.vehicle_type; }).join(', ')) + (l.exclusive_vehicle ? ' · вся машина' : '') + '</dd>' +
+    '<dt>Вес</dt><dd>' + (l.weight_kg ? Number(l.weight_kg).toLocaleString('ru-RU') + ' кг' : '—') + '</dd>' +
+    '<dt>Цена</dt><dd>' + esc(money(l.price_amount)) + '</dd>' +
+    '<dt>Описание</dt><dd class="pre">' + esc(l.description || '—') + '</dd>' +
+    '<dt>Фото</dt><dd>' + (l.listing_photos || []).length + '</dd>' +
+    '<dt>Создано</dt><dd>' + dt(l.created_at) + '</dd>' +
+    '<dt>Истекает</dt><dd>' + dt(l.expires_at) + '</dd>' +
+    '<dt>Звонков</dt><dd>' + l.contact_count + (l.first_contact_at ? ' · первый ' + dt(l.first_contact_at) : '') + '</dd>' +
+    (l.close_reason ? '<dt>Причина закрытия</dt><dd>' + esc(l.close_reason) + '</dd>' : '') +
+    (l.removed_reason ? '<dt>Убрано</dt><dd class="pre">' + esc(l.removed_reason) + ' · ' + dt(l.removed_at) + '</dd>' : '') +
+    '</dl>';
+  if (can(2)) {
+    h += '<div class="actions">' + (l.status !== 'removed'
+      ? '<button class="btn danger" data-do="lremove" data-id="' + l.id + '">Убрать объявление</button>'
+      : (l.removed_by ? '<button class="btn pri" data-do="lrestore" data-id="' + l.id + '">Вернуть объявление</button>' : '')) + '</div>';
+  }
+  h += '</div><div class="card"><h2>Жалобы (' + r.reports.length + ')</h2>' + (r.reports.length ? r.reports.map(function (x) {
+    return '<div class="rmeta" style="margin-top:8px"><b style="color:var(--tx)">' + esc(RR[x.reason] || x.reason) + '</b> · ' + dt(x.created_at) + ' · ' + esc(x.status) + (x.details ? '<div class="pre">' + esc(x.details) + '</div>' : '') + '</div>';
+  }).join('') : '<p class="mut">Нет</p>') + '</div>';
+  h += notesBlock('listing', l.id, r.notes);
+  main.innerHTML = h;
+}
+
+async function vReports(main, id, qs) {
+  var s = qs.get('s') || 'open', mine = qs.get('mine') === '1';
+  var p = { page: +qs.get('page') || 1 };
+  if (s !== 'all') p.status = s;
+  if (mine) p.assigned_to_me = true;
+  var res = await api('reports.list', p);
+  main.innerHTML = '<div class="head"><h1>Жалобы</h1></div>' +
+    tabs([['open', 'Открытые'], ['resolved', 'Решённые'], ['dismissed', 'Отклонённые'], ['all', 'Все']], s, 's') +
+    tabs([['', 'Все исполнители'], ['1', 'Мои']], mine ? '1' : '', 'mine') +
+    (res.items.length ? res.items.map(function (x) {
+      var target = x.listing ? '<a href="#/listings/' + x.listing.id + '">объявление #' + x.listing.id + '</a>' : '';
+      var who = x.reported ? '<a href="#/users/' + x.reported.id + '">' + esc(uname(x.reported)) + '</a>' + (x.reported.is_blocked ? ' (заблокирован)' : '') : '';
+      var stb = x.status === 'open' ? badge('Открыта', 'warn') : (x.status === 'resolved' ? badge('Решена', 'ok') : badge('Отклонена'));
+      return '<div class="row"><div class="rmain"><b>' + esc(RR[x.reason] || x.reason) + '</b> <span class="mut">#' + x.id + ' · ' + dt(x.created_at) + '</span>' +
+        (x.details ? '<div class="pre" style="margin-top:4px">' + esc(x.details) + '</div>' : '') +
+        '<div class="rmeta">От: ' + esc(uname(x.reporter)) + (who ? ' · На: ' + who : '') + (target ? ' · ' + target : '') + '</div>' +
+        (x.resolution_note ? '<div class="rmeta pre">Итог: ' + esc(x.resolution_note) + '</div>' : '') +
+        (can(2) ? '<div class="actions">' +
+          (x.status === 'open' ? (x.assigned_to ? '' : '<button class="btn sm" data-do="rassign" data-id="' + x.id + '">Взять в работу</button>') +
+            '<button class="btn sm pri" data-do="rupdate" data-id="' + x.id + '" data-s="resolved">Решено</button><button class="btn sm" data-do="rupdate" data-id="' + x.id + '" data-s="dismissed">Отклонить</button>'
+            : '<button class="btn sm" data-do="rupdate" data-id="' + x.id + '" data-s="open">Открыть снова</button>') + '</div>' : '') +
+        '</div><div class="rside">' + stb + (x.assigned_to && x.status === 'open' ? badge('В работе') : '') + '</div></div>';
+    }).join('') : empty('Жалоб нет')) + pager(res, qs);
+}
+
+async function vRatings(main, id, qs) {
+  var f = qs.get('f') || '';
+  var p = { page: +qs.get('page') || 1 };
+  if (f === 'hidden') p.hidden = true; else if (f === 'visible') p.hidden = false; else if (f === 'low') p.max_stars = 3;
+  var res = await api('ratings.list', p);
+  main.innerHTML = '<div class="head"><h1>Отзывы</h1></div>' +
+    tabs([['', 'Все'], ['visible', 'Видимые'], ['hidden', 'Скрытые'], ['low', '3★ и ниже']], f, 'f') +
+    (res.items.length ? res.items.map(function (x) {
+      return '<div class="row"><div class="rmain"><b>' + stars(x.stars) + '</b>' + (x.comment ? '<div class="pre">' + esc(x.comment) + '</div>' : '<div class="mut">Без комментария</div>') +
+        '<div class="rmeta"><a href="#/users/' + x.rater.id + '">' + esc(uname(x.rater)) + '</a> → <a href="#/users/' + x.ratee.id + '">' + esc(uname(x.ratee)) + '</a> · объявление <a href="#/listings/' + x.listing_id + '">#' + x.listing_id + '</a> · ' + dt(x.created_at) + '</div></div><div class="rside">' +
+        (x.is_hidden ? badge('Скрыт', 'bad') : '') +
+        (can(2) ? '<button class="btn sm" data-do="rhide" data-id="' + x.id + '" data-h="' + (x.is_hidden ? '0' : '1') + '">' + (x.is_hidden ? 'Показать' : 'Скрыть') + '</button>' : '') + '</div></div>';
+    }).join('') : empty('Отзывов нет')) + pager(res, qs);
+}
+
+async function vAudit(main, id, qs) {
+  var a = qs.get('action') || '';
+  var p = { page: +qs.get('page') || 1 };
+  if (a) p.action = a;
+  var both = await Promise.all([api('audit.list', p), api('staff.list')]);
+  var res = both[0], names = {};
+  both[1].items.forEach(function (s) { names[s.user_id] = uname(s.profile); });
+  main.innerHTML = '<div class="head"><h1>Журнал действий</h1></div>' +
+    searchBar('action', a, 'Действие, например user.ban') +
+    (res.items.length ? res.items.map(function (x) {
+      var det = x.details && Object.keys(x.details).length ? '<div class="rmeta"><code>' + esc(JSON.stringify(x.details).slice(0, 300)) + '</code></div>' : '';
+      return '<div class="row"><div class="rmain"><b>' + esc(x.action) + '</b> <span class="mut">' + esc(x.entity_type || '') + ' ' + esc(x.entity_id || '') + '</span><div class="rmeta">' +
+        esc(x.admin_id ? (names[x.admin_id] || x.admin_id.slice(0, 8)) : 'не сотрудник') + (x.admin_role ? ' · ' + esc(RL[x.admin_role] || x.admin_role) : '') + ' · ' + dt(x.created_at) + (x.source ? ' · ' + esc(x.source) : '') + '</div>' + det + '</div></div>';
+    }).join('') : empty('Записей нет')) + pager(res, qs);
+}
+
+async function vStaff(main) {
+  var res = await api('staff.list');
+  main.innerHTML = '<div class="head"><h1>Сотрудники</h1></div>' +
+    '<div class="card mut">Чтобы добавить сотрудника: человек один раз открывает бота @' + BOT + ', затем вы находите его в разделе «Пользователи» и назначаете роль на его странице.</div>' +
+    (res.items.length ? res.items.map(function (s) {
+      return '<div class="row"><div class="rmain"><a href="#/users/' + s.user_id + '"><b>' + esc(uname(s.profile)) + '</b></a> <span class="mut">' + (s.profile && s.profile.telegram_username ? '@' + esc(s.profile.telegram_username) : '') + '</span><div class="rmeta">с ' + dt(s.created_at) + '</div>' +
+        (can(4) ? '<div class="bar" style="margin:8px 0 0"><select class="inp" style="max-width:180px" id="role-' + s.user_id + '">' + ['support', 'moderator', 'admin', 'owner'].map(function (k) { return '<option value="' + k + '"' + (s.role === k ? ' selected' : '') + '>' + RL[k] + '</option>'; }).join('') + '</select><button class="btn sm pri" data-do="staffrole" data-id="' + s.user_id + '">Сохранить</button><button class="btn sm' + (s.is_active ? ' danger' : '') + '" data-do="staffactive" data-id="' + s.user_id + '" data-v="' + (s.is_active ? '0' : '1') + '">' + (s.is_active ? 'Отключить' : 'Включить') + '</button></div>' : '') +
+        '</div><div class="rside">' + badge(RL[s.role] || s.role, 'warn') + (s.is_active ? badge('Активен', 'ok') : badge('Отключён', 'bad')) + '</div></div>';
+    }).join('') : empty('Сотрудников нет'));
+}
+
+async function vSettings(main) {
+  var res = await api('settings.list');
+  main.innerHTML = '<div class="head"><h1>Настройки</h1></div>' +
+    (can(4) ? '<div class="card mut">Изменение настройки подтверждается кнопкой в боте.</div>' : '') +
+    res.items.map(function (s) {
+      return '<div class="row"><div class="rmain"><b>' + esc(s.key) + '</b><div class="rmeta">' + esc(s.description || '') + '</div><div style="margin-top:6px"><code>' + esc(JSON.stringify(s.value)) + '</code></div></div><div class="rside">' +
+        (can(4) ? '<button class="btn sm" data-do="sedit" data-key="' + esc(s.key) + '" data-val="' + esc(JSON.stringify(s.value)) + '">Изменить</button>' : '') + '</div></div>';
+    }).join('');
+}
+
+// ---------- actions ----------
+var H = {
+  reload: function () { route(); },
+  logout: function () { logout(); },
+  theme: function () {
+    var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('adlcargo-admin-theme', t); } catch (e) {}
+  },
+  page: function (t) { nav({ page: t.dataset.p }); },
+  tab: function (t) { var u = { page: '' }; u[t.dataset.k] = t.dataset.v; nav(u); },
+  fsearch: function (el) { var u = { page: '' }; u[el.dataset.key] = el.value.trim(); nav(u); },
+  fsearchbtn: function (t) { var el = $('#q-' + t.dataset.key); var u = { page: '' }; u[t.dataset.key] = el.value.trim(); nav(u); },
+  ban: async function (t) {
+    var long = can(3);
+    var v = await ask('Забанить пользователя',
+      '<label>Причина</label><textarea class="inp" name="reason" maxlength="300" placeholder="Например: мошенничество или спам"></textarea>' +
+      '<label>Срок</label><select class="inp" name="days"><option value="1">1 день</option><option value="3">3 дня</option><option value="7" selected>7 дней</option><option value="30">30 дней</option>' +
+      (long ? '<option value="90">90 дней</option><option value="365">365 дней</option><option value="perm">Навсегда (подтверждение в боте)</option>' : '') + '</select>', 'Забанить', true);
+    if (!v) return;
+    var days = v.days === 'perm' ? null : +v.days;
+    guard(function () { return act('users.ban', { user_id: t.dataset.id, reason: v.reason, days: days }); }, 'Пользователь забанен');
+  },
+  unban: async function (t) {
+    if (!confirm('Снять бан с пользователя?')) return;
+    guard(function () { return api('users.unban', { user_id: t.dataset.id }); }, 'Бан снят');
+  },
+  setrole: function (t) { var role = $('#roleSel').value; guard(function () { return act('staff.set_role', { user_id: t.dataset.id, role: role }); }, 'Роль изменена'); },
+  staffrole: function (t) { var role = $('#role-' + t.dataset.id).value; guard(function () { return act('staff.set_role', { user_id: t.dataset.id, role: role }); }, 'Роль изменена'); },
+  staffactive: function (t) { var on = t.dataset.v === '1'; guard(function () { return act('staff.set_role', { user_id: t.dataset.id, is_active: on }); }, on ? 'Доступ включён' : 'Доступ отключён'); },
+  noteadd: function (t) {
+    var body = $('#nbody').value.trim();
+    if (!body) return;
+    guard(function () { return api('notes.add', { entity_type: t.dataset.t, entity_id: t.dataset.id, body: body }); }, 'Заметка добавлена');
+  },
+  lremove: async function (t) {
+    var v = await ask('Убрать объявление', '<label>Причина (увидит только персонал)</label><textarea class="inp" name="reason" maxlength="500"></textarea>', 'Убрать', true);
+    if (!v) return;
+    guard(function () { return api('listings.remove', { id: +t.dataset.id, reason: v.reason }); }, 'Объявление убрано');
+  },
+  lrestore: function (t) { guard(function () { return api('listings.restore', { id: +t.dataset.id }); }, 'Объявление возвращено'); },
+  rassign: function (t) { guard(function () { return api('reports.update', { id: +t.dataset.id, assign: true }); }, 'Жалоба в работе'); },
+  rupdate: async function (t) {
+    var s = t.dataset.s, p = { id: +t.dataset.id, status: s };
+    if (s !== 'open') {
+      var v = await ask(s === 'resolved' ? 'Жалоба решена' : 'Отклонить жалобу', '<label>Комментарий (необязательно)</label><textarea class="inp" name="note" maxlength="1000"></textarea>', s === 'resolved' ? 'Решено' : 'Отклонить');
+      if (!v) return;
+      if (v.note.trim()) p.note = v.note.trim();
+    }
+    guard(function () { return api('reports.update', p); }, 'Готово');
+  },
+  rhide: function (t) { var hide = t.dataset.h === '1'; guard(function () { return api('ratings.hide', { id: +t.dataset.id, hidden: hide }); }, hide ? 'Отзыв скрыт' : 'Отзыв показан'); },
+  sedit: async function (t) {
+    var v = await ask('Настройка ' + t.dataset.key, '<label>Значение (JSON)</label><textarea class="inp" name="val">' + esc(t.dataset.val) + '</textarea>', 'Изменить');
+    if (!v) return;
+    var val;
+    try { val = JSON.parse(v.val); } catch (e) { toast('Это не корректный JSON', true); return; }
+    guard(function () { return act('settings.set', { key: t.dataset.key, value: val }); }, 'Настройка изменена');
+  }
+};
+
+document.addEventListener('click', function (e) {
+  lastAct = Date.now();
+  var t = e.target.closest('[data-do]');
+  if (!t || !H[t.dataset.do]) return;
+  if (t.tagName === 'A') e.preventDefault();
+  H[t.dataset.do](t);
+});
+document.addEventListener('keydown', function (e) {
+  lastAct = Date.now();
+  if (e.key === 'Enter' && e.target.dataset && e.target.dataset.enter && H[e.target.dataset.enter]) H[e.target.dataset.enter](e.target);
+});
+['touchstart', 'scroll', 'mousemove'].forEach(function (ev) { window.addEventListener(ev, function () { lastAct = Date.now(); }, { passive: true }); });
+
+// ---------- router / shell ----------
+var VIEWS = { dashboard: vDash, users: vUsers, listings: vListings, reports: vReports, ratings: vRatings, audit: vAudit, staff: vStaff, settings: vSettings };
+var MIN = { audit: 3, staff: 3, settings: 3 };
+var NAV = [['dashboard', 'Обзор'], ['users', 'Пользователи'], ['listings', 'Объявления'], ['reports', 'Жалобы'], ['ratings', 'Отзывы'], ['audit', 'Журнал'], ['staff', 'Сотрудники'], ['settings', 'Настройки']];
+var RS = 0;
+
+function renderShell() {
+  $('#app').innerHTML = '<div class="shell"><aside class="side"><div class="brand">adl cargo <small>админ</small></div><nav class="nav" id="nav">' +
+    NAV.filter(function (n) { return can(MIN[n[0]] || 1); }).map(function (n) { return '<a href="#/' + n[0] + '" data-n="' + n[0] + '">' + n[1] + '</a>'; }).join('') +
+    '</nav><div class="me"><div class="who"><b>' + esc(S.name) + '</b><span class="mut">' + esc(RL[S.role] || S.role) + '</span></div><div class="btns"><button class="btn sm" data-do="theme" title="Тема">◐</button><button class="btn sm" data-do="logout">Выйти</button></div></div></aside><main class="main" id="main"></main></div>';
+}
+
+async function route() {
+  if (!S) return;
+  var seq = ++RS;
+  var raw = location.hash.slice(1) || '/dashboard';
+  var parts0 = raw.split('?');
+  var parts = parts0[0].split('/').filter(Boolean);
+  var name = parts[0] || 'dashboard';
+  if (!VIEWS[name] || !can(MIN[name] || 1)) { location.hash = '#/dashboard'; return; }
+  document.querySelectorAll('#nav a').forEach(function (a) { a.classList.toggle('on', a.dataset.n === name); });
+  var main = $('#main');
+  main.innerHTML = '<div class="mut pad">Загрузка…</div>';
+  try {
+    await VIEWS[name](main, parts[1], new URLSearchParams(parts0[1] || ''));
+  } catch (e) {
+    if (!S || seq !== RS) return;
+    main.innerHTML = '<div class="card"><p>' + esc(errText(e)) + '</p><button class="btn" data-do="reload">Повторить</button></div>';
+  }
+  if (seq === RS) window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', route);
+
+// ---------- session ----------
+function save() { try { sessionStorage.setItem('adm', JSON.stringify(S)); } catch (e) {} }
+function stopTimers() { timers.forEach(clearInterval); timers = []; }
+
+function logout(msg) {
+  S = null;
+  try { sessionStorage.removeItem('adm'); } catch (e) {}
+  stopTimers();
+  closeModal();
+  showLogin(msg);
+}
+
+function startApp() {
+  renderShell();
+  stopTimers();
+  lastAct = Date.now();
+  timers.push(setInterval(async function () {
+    if (!S) return;
+    var now = Date.now() / 1000;
+    if (now > S.abs) { logout(ERR.session_expired); return; }
+    if (S.exp - now < 300) {
+      try { var d = await api('refresh'); S.token = d.token; S.exp = d.expires_at; save(); } catch (e) {}
+    }
+  }, 60000));
+  timers.push(setInterval(function () {
+    if (S && Date.now() - lastAct > 20 * 60 * 1000) logout('Вы вышли из-за неактивности');
+  }, 30000));
+  route();
+}
+
+async function doLogin(body) {
+  try {
+    var d = await api('login', body);
+    S = { token: d.token, exp: d.expires_at, abs: d.absolute_expires_at, role: d.role, name: d.name };
+    save();
+    startApp();
+  } catch (e) { showLogin(errText(e), true); }
+}
+
+window.onTelegramAuth = function (user) { doLogin({ widget: user }); };
+
+function showLogin(msg, noAuto) {
+  $('#app').innerHTML = '<div class="login"><div class="card"><div class="logo">adl<small>cargo · админ-панель</small></div><div id="lbox" style="margin-top:22px"></div><div class="err" id="lerr">' + esc(msg || '') + '</div></div></div>';
+  var box = $('#lbox');
+  if (TGAPP) {
+    if (!msg && !noAuto) {
+      box.innerHTML = '<div class="spin"></div><div class="mut">Входим…</div>';
+      doLogin({ initData: TGAPP.initData });
+    } else {
+      box.innerHTML = '<button class="btn pri" id="retry">Войти снова</button>';
+      $('#retry').onclick = function () { showLogin(); };
+    }
+    return;
+  }
+  box.innerHTML = '<p class="mut">Войдите через Telegram. Доступ только у сотрудников.</p>';
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://telegram.org/js/telegram-widget.js?22';
+  s.setAttribute('data-telegram-login', BOT);
+  s.setAttribute('data-size', 'large');
+  s.setAttribute('data-radius', '10');
+  s.setAttribute('data-onauth', 'onTelegramAuth(user)');
+  s.setAttribute('data-request-access', 'write');
+  box.appendChild(s);
+}
+
+function boot() {
+  var th = 'light';
+  try { th = localStorage.getItem('adlcargo-admin-theme') || 'light'; } catch (e) {}
+  document.documentElement.setAttribute('data-theme', th === 'dark' ? 'dark' : 'light');
+  if (TGAPP) { try { TGAPP.ready(); TGAPP.expand(); } catch (e) {} }
+  var raw = null;
+  try { raw = sessionStorage.getItem('adm'); } catch (e) {}
+  if (raw) {
+    try { S = JSON.parse(raw); } catch (e) { S = null; }
+    var now = Date.now() / 1000;
+    if (S && S.token && S.exp > now + 10 && S.abs > now) {
+      api('me').then(function (m) { S.role = m.role; S.name = m.name; startApp(); }).catch(function () { if (S) logout(); });
+      return;
+    }
+    S = null;
+    try { sessionStorage.removeItem('adm'); } catch (e) {}
+  }
+  showLogin();
+}
+
+boot();
+})();
+</script>
+</body>
+</html>
