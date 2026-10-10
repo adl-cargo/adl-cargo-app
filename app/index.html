@@ -123,7 +123,13 @@ textarea.inp{padding:12px 14px;min-height:96px;resize:vertical}
 .err{color:#B3261E;font-size:14px;margin:12px 0 0}
 html[data-theme=dark] .err{color:#FFB4AB}
 
-dialog{width:min(520px,calc(100% - 24px));max-height:calc(100% - 32px);padding:0;border:1px solid var(--line);border-radius:20px;background:var(--surf);color:var(--tx);overflow:auto}
+html,body{overscroll-behavior-y:none}
+html.lock body{position:fixed;left:0;right:0;width:100%;overflow:hidden}
+.xrow{display:flex;gap:8px;margin-top:8px}
+.xrow .inp{flex:1}
+.xrow .x2{flex:none;width:50px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--tx)}
+.lnk{background:none;border:0;padding:10px 0;color:var(--acct);font-weight:600;font-size:15px}
+dialog{overscroll-behavior:contain;width:min(520px,calc(100% - 24px));max-height:calc(100% - 32px);padding:0;border:1px solid var(--line);border-radius:20px;background:var(--surf);color:var(--tx);overflow:auto}
 dialog::backdrop{background:rgba(0,0,0,.5)}
 dialog .in{padding:20px;display:flex;flex-direction:column;gap:14px}
 dialog .hd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
@@ -303,6 +309,11 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     f_nophone: ['У автора нет номера телефона.', 'Muallifning telefon raqami yo\u2018q.'], f_unavail: ['Объявление уже снято с доски.', 'E\u2019lon allaqachon doskadan olib tashlangan.'],
     f_net: ['Нет связи с сервером. Проверьте интернет и повторите.', 'Server bilan aloqa yo\u2018q. Internetni tekshirib, qayta urinib ko\u2018ring.'],
     f_generic: ['Не получилось: {0}', 'Bajarilmadi: {0}'],
+    lbl_extra: ['Дополнительные номера (необязательно)', 'Qo\u2018shimcha raqamlar (ixtiyoriy)'],
+    extra_hint: ['Например, если Telegram открыт на номер другой страны. Водители увидят их вместе с основным.', 'Masalan, Telegram boshqa davlat raqamiga ochilgan bo\u2018lsa. Haydovchilar ularni asosiy raqam bilan birga ko\u2018radi.'],
+    extra_add: ['+ Добавить номер', '+ Raqam qo\u2018shish'], extra_rm: ['Убрать номер', 'Raqamni olib tashlash'],
+    e_extra: ['Укажите номер с кодом страны, например +998 90 123 45 67.', 'Raqamni davlat kodi bilan kiriting, masalan +998 90 123 45 67.'],
+    e_desc_contacts: ['В описании нельзя указывать телефоны и контакты. Номера добавьте в поле «Дополнительные номера».', 'Tavsifda telefon va kontaktlarni ko\u2018rsatish mumkin emas. Raqamlarni «Qo\u2018shimcha raqamlar» maydoniga yozing.'],
     f_plate: ['Проверьте номер автомобиля: 5–10 латинских букв и цифр, например 01A123BC.', 'Avtomobil raqamini tekshiring: 5\u201310 ta lotin harfi va raqam, masalan 01A123BC.'],
     f_dupe: ['Эта машина уже добавлена.', 'Bu mashina allaqachon qo\u2018shilgan.'], f_role: ['Сначала включите режим водителя.', 'Avval haydovchi rejimini yoqing.'],
     st_active: ['Активно до {0}', '{0} gacha faol'], st_deal: ['Договорились', 'Kelishildi'], st_closed: ['Снято', 'Olib tashlangan'], st_removed: ['Удалено', 'O\u2018chirilgan'], st_expired: ['Истекло', 'Muddati tugagan'],
@@ -380,6 +391,8 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     if (/Listing not available/i.test(msg)) return t('f_unavail');
     if (/Pickup and delivery places must differ/i.test(msg)) return t('e_same');
     if (/Select at least one vehicle/i.test(msg)) return t('e_vehicle');
+    if (/Description contains contacts/i.test(msg)) return t('e_desc_contacts');
+    if (/Invalid extra phone|At most 2 extra phones/i.test(msg)) return t('e_extra');
     if (/driver_vehicles_plate_number_check/i.test(msg)) return t('f_plate');
     if (/driver_vehicles_driver_id_plate_number_key|duplicate key/i.test(msg)) return t('f_dupe');
     if (/row-level security/i.test(msg)) return t('f_role');
@@ -661,10 +674,25 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   var dlg = $('dlg');
   function closeDlg() { if (dlg.open) dlg.close(); }
   dlg.addEventListener('click', function (e) { if (e.target === dlg) closeDlg(); });
+  /* Freeze the page under an open dialog so the feed never moves; restore the exact position on close */
+  var lockY = 0, locked = false;
+  function syncLock() {
+    var any = dlg.open || (typeof pickDlg !== 'undefined' && pickDlg && pickDlg.open);
+    if (any && !locked) {
+      lockY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      document.body.style.top = (-lockY) + 'px';
+      document.documentElement.classList.add('lock'); locked = true;
+    } else if (!any && locked) {
+      document.documentElement.classList.remove('lock'); document.body.style.top = ''; locked = false;
+      window.scrollTo(0, lockY);
+    }
+  }
+  dlg.addEventListener('close', syncLock);
   function openDlg(build) {
     var body = $('dlgBody'); body.textContent = '';
     build(body);
     if (!dlg.open) dlg.showModal();
+    syncLock();
   }
   function dlgHead(body, titleNode, sub) {
     var hd = el('div', 'hd'); var left = el('div');
@@ -716,10 +744,13 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
         b.addEventListener('click', function () {
           if (!inTg) { toast(t('phone_open_bot')); return; }
           b.disabled = true;
-          rpc('reveal_listing_contact', { p_listing_id: l.id }).then(function (phone) {
+          rpc('reveal_listing_contacts', { p_listing_id: l.id }).then(function (phones) {
             slot.textContent = '';
-            var a = el('a', 'btn pri block'); a.href = 'tel:' + String(phone).replace(/[^\d+]/g, '');
-            a.appendChild(icon(P.phone, 18)); a.appendChild(document.createTextNode(t('call', phone))); slot.appendChild(a);
+            (Array.isArray(phones) ? phones : [phones]).forEach(function (phone, i) {
+              var a = el('a', (i === 0 ? 'btn pri block' : 'btn sec block')); a.href = 'tel:' + String(phone).replace(/[^\d+]/g, '');
+              if (i) a.style.marginTop = '8px';
+              a.appendChild(icon(P.phone, 18)); a.appendChild(document.createTextNode(t('call', phone))); slot.appendChild(a);
+            });
           }).catch(function (e) { b.disabled = false; toast(friendly(e.message)); });
         });
         slot.appendChild(b);
@@ -777,9 +808,10 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
         rpc('search_places', { q: q, lim: 20 }).then(function (rows) { if (my === seq) fill(rows, ''); }).catch(function (e) { toast(friendly(e.message)); });
       }, 250);
     });
-    pickDlg.showModal(); inp.focus(); showRegions();
+    pickDlg.showModal(); syncLock(); inp.focus(); showRegions();
   }
   pickDlg.addEventListener('click', function (e) { if (e.target === pickDlg) closePick(); });
+  pickDlg.addEventListener('close', syncLock);
   function placeField(obj, key, label) {
     var wrap = el('div'); wrap.appendChild(el('label', 'l', label));
     var holder = el('div'); wrap.appendChild(holder);
@@ -870,9 +902,26 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   }
 
   /* ---------- Create (shipper mode) ---------- */
+  /* '' = empty field (skip), null = invalid, otherwise +E.164 */
+  function normPhone(v) {
+    var n = String(v || '').replace(/[^0-9+]/g, '');
+    if (n === '' || n === '+' || n === '+998' || n === '998') return '';
+    if (n.charAt(0) !== '+') {
+      if (/^[0-9]{9}$/.test(n)) n = '+998' + n;
+      else if (/^998[0-9]{9}$/.test(n)) n = '+' + n;
+      else return null;
+    }
+    return /^\+[1-9][0-9]{7,14}$/.test(n) ? n : null;
+  }
+  /* Same rule as the server: 9+ digits in a row (separators ignored), @username, links */
+  function hasContacts(s) {
+    s = String(s || ''); if (!s) return false;
+    var c = s.replace(/(\d)[\s\-().]+(?=\d)/g, '$1');
+    return /\d{9,}/.test(c) || /@[a-z0-9_]{4,}/i.test(s) || /(t\.me|telegram\.me|wa\.me|https?:\/\/|www\.)/i.test(s);
+  }
   function newForm() {
     if (form && form.photos) form.photos.forEach(function (p) { URL.revokeObjectURL(p.url); });
-    return { route: 'intercity', from: null, to: null, codes: {}, excl: false, weight: '', price: '', desc: '', photos: [], busy: false };
+    return { route: 'intercity', from: null, to: null, codes: {}, excl: false, weight: '', price: '', desc: '', extra: [], photos: [], busy: false };
   }
   function renderCreate() {
     var body = $('createBody'); body.textContent = '';
@@ -916,6 +965,27 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     var ds = el('textarea', 'inp'); ds.maxLength = 1000; ds.placeholder = t('ph_desc'); ds.value = form.desc;
     ds.addEventListener('input', function () { form.desc = ds.value; }); body.appendChild(ds);
 
+    body.appendChild(el('label', 'l', t('lbl_extra')));
+    body.appendChild(el('div', 'hint', t('extra_hint')));
+    var xwrap = el('div');
+    function drawExtra() {
+      xwrap.textContent = '';
+      form.extra.forEach(function (val, i) {
+        var row = el('div', 'xrow');
+        var inp = el('input', 'inp'); inp.type = 'tel'; inp.inputMode = 'tel'; inp.autocomplete = 'off'; inp.maxLength = 24; inp.placeholder = '+998 90 123 45 67'; inp.value = val;
+        inp.addEventListener('input', function () { form.extra[i] = inp.value; });
+        var rm = el('button', 'x2'); rm.type = 'button'; rm.setAttribute('aria-label', t('extra_rm')); rm.appendChild(icon(P.x, 18));
+        rm.addEventListener('click', function () { form.extra.splice(i, 1); drawExtra(); });
+        row.appendChild(inp); row.appendChild(rm); xwrap.appendChild(row);
+      });
+      if (form.extra.length < 2) {
+        var add = el('button', 'lnk', t('extra_add')); add.type = 'button';
+        add.addEventListener('click', function () { form.extra.push('+998 '); drawExtra(); var ins = xwrap.querySelectorAll('input'); if (ins.length) ins[ins.length - 1].focus(); });
+        xwrap.appendChild(add);
+      }
+    }
+    drawExtra(); body.appendChild(xwrap);
+
     var err = el('div', 'err'); err.hidden = true; body.appendChild(err);
     var go = el('button', 'btn pri block', t('publish')); go.type = 'button'; go.style.marginTop = '18px'; body.appendChild(go);
     go.addEventListener('click', function () {
@@ -927,6 +997,14 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
       var codes = chosenCodes(); if (!codes.length) return fail(t('e_vehicle'));
       var wt = form.weight === '' ? null : Number(form.weight); if (wt !== null && !(wt > 0)) return fail(t('e_weight'));
       var pc = form.price === '' ? null : Number(form.price); if (pc !== null && !(pc >= 0)) return fail(t('e_price'));
+      if (hasContacts(form.desc)) return fail(t('e_desc_contacts'));
+      var extras = []; 
+      for (var xi = 0; xi < form.extra.length; xi++) {
+        var ph = normPhone(form.extra[xi]);
+        if (ph === '') continue;
+        if (!ph) return fail(t('e_extra'));
+        if (extras.indexOf(ph) < 0 && ph.replace(/\D/g, '') !== String(profile.phone || '').replace(/\D/g, '')) extras.push(ph);
+      }
       if (form.busy) return; form.busy = true; go.disabled = true; go.textContent = t('publishing');
       var uploaded = [];
       function reset(m) { form.busy = false; go.disabled = false; go.textContent = t('publish'); if (m) fail(m); }
@@ -941,7 +1019,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
           return rpc('create_listing', {
             p_from_place: form.from.id, p_to_place: form.route === 'intracity' ? form.from.id : form.to.id,
             p_vehicle_types: codes, p_description: form.desc.trim() || null, p_weight_kg: wt, p_price_amount: pc,
-            p_exclusive: form.excl, p_route_type: form.route, p_photo_paths: uploaded
+            p_exclusive: form.excl, p_route_type: form.route, p_photo_paths: uploaded, p_extra_phones: extras
           }).catch(function (e) { dropPhotos(uploaded); throw e; });
         })
         .then(function () { form = newForm(); toast(t('published')); feedAll = null; mineRows = null; show('mine'); })
@@ -1267,7 +1345,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   });
 
   /* ---------- Boot ---------- */
-  if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
+  if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} try { if (tg.disableVerticalSwipes) tg.disableVerticalSwipes(); } catch (e) {} }
   applyStatic(); renderModeSw(); renderFilters();
   show(uiMode === 'driver' ? 'feed' : 'create');
   rest('vehicle_types?select=code,name_ru,name_uz,max_weight_kg,parent_code,sort_order&is_active=eq.true&order=sort_order')
