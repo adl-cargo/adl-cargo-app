@@ -384,6 +384,7 @@ async function vListing(main, id) {
   var h = '<a class="back" href="#/listings">← Объявления</a><div class="head"><h1>#' + l.id + ' ' + esc(rt) + '</h1><div>' + badge(st[0], st[1]) + '</div></div>';
   h += '<div class="card"><dl class="kv">' +
     '<dt>Автор</dt><dd>' + (l.author ? '<a href="#/users/' + l.author.id + '">' + esc(uname(l.author)) + '</a>' + (l.author.is_blocked ? ' ' + badge('Заблокирован', 'bad') : '') + '<br><span class="mut">' + esc(l.author.phone || '') + '</span>' : '—') + '</dd>' +
+    (r.extra_phones && r.extra_phones.length ? '<dt>Доп. номера</dt><dd>' + r.extra_phones.map(function (x) { return esc(x.phone); }).join('<br>') + '</dd>' : '') +
     '<dt>Машины</dt><dd>' + esc((l.listing_vehicle_types || []).map(function (x) { return x.vehicle_type; }).join(', ')) + (l.exclusive_vehicle ? ' · вся машина' : '') + '</dd>' +
     '<dt>Вес</dt><dd>' + (l.weight_kg ? Number(l.weight_kg).toLocaleString('ru-RU') + ' кг' : '—') + '</dd>' +
     '<dt>Цена</dt><dd>' + esc(money(l.price_amount)) + '</dd>' +
