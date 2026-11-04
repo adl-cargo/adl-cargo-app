@@ -36,6 +36,7 @@ h1{font-size:22px}h2{font-size:17px}h3{font-size:16px}
 .main{padding:22px;max-width:1120px;width:100%}
 .head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
 .card{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}.tbl th,.tbl td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}.tbl th{color:var(--tx3);font-weight:500;font-size:13px}.tbl .num{text-align:right;white-space:nowrap}.twrap{overflow-x:auto}.chip{display:inline-block;padding:2px 8px;margin:2px 4px 2px 0;border-radius:999px;border:1px solid var(--line);font-size:12px;white-space:nowrap}.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:16px}
 .stat{display:block;text-decoration:none;background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 a.stat:hover{border-color:var(--acct)}
@@ -284,9 +285,11 @@ function notesBlock(type, id, items) {
 async function vDash(main) {
   var d = await api('dashboard');
   var stale = await api('listings.list', { stale: true, size: 5 });
+  var ds = await api('drivers.stats').catch(function () { return null; });
   main.innerHTML =
     '<div class="head"><h1>Обзор</h1></div><div class="grid">' +
     '<a class="stat" href="#/users"><div class="n">' + d.users + '</div><div class="l">Пользователей · +' + d.users_7d + ' за 7 дней</div></a>' +
+    (ds ? '<a class="stat" href="#/drivers"><div class="n">' + ds.drivers + '</div><div class="l">Водителей в базе · +' + ds.drivers_7d + ' за 7 дней</div></a>' : '') +
     '<a class="stat" href="#/users?blocked=1"><div class="n">' + d.users_blocked + '</div><div class="l">Заблокировано</div></a>' +
     '<a class="stat" href="#/listings?f=active"><div class="n">' + d.listings_active + '</div><div class="l">Активных объявлений · +' + d.listings_24h + ' за сутки</div></a>' +
     '<a class="stat' + (d.listings_stale_30m ? ' warn' : '') + '" href="#/listings?f=stale"><div class="n">' + d.listings_stale_30m + '</div><div class="l">Без звонков 30+ минут</div></a>' +
@@ -560,10 +563,33 @@ document.addEventListener('keydown', function (e) {
 ['touchstart', 'scroll', 'mousemove'].forEach(function (ev) { window.addEventListener(ev, function () { lastAct = Date.now(); }, { passive: true }); });
 
 // ---------- router / shell ----------
-var VIEWS = { dashboard: vDash, users: vUsers, listings: vListings, reports: vReports, ratings: vRatings, audit: vAudit, staff: vStaff, settings: vSettings };
+var VIEWS = { dashboard: vDash, drivers: vDrivers, users: vUsers, listings: vListings, reports: vReports, ratings: vRatings, audit: vAudit, staff: vStaff, settings: vSettings };
 var MIN = { audit: 3, staff: 3, settings: 3 };
-var NAV = [['dashboard', 'Обзор'], ['users', 'Пользователи'], ['listings', 'Объявления'], ['reports', 'Жалобы'], ['ratings', 'Отзывы'], ['audit', 'Журнал'], ['staff', 'Сотрудники'], ['settings', 'Настройки']];
+var NAV = [['dashboard', 'Обзор'], ['drivers', 'Водители'], ['users', 'Пользователи'], ['listings', 'Объявления'], ['reports', 'Жалобы'], ['ratings', 'Отзывы'], ['audit', 'Журнал'], ['staff', 'Сотрудники'], ['settings', 'Настройки']];
 var RS = 0;
+
+async function vDrivers(main) {
+  var d = await api('drivers.stats');
+  function st(n, l) { return '<div class="stat"><div class="n">' + n + '</div><div class="l">' + esc(l) + '</div></div>'; }
+  function chips(o) { return Object.keys(o || {}).map(function (k) { return '<span class="chip">' + esc(k) + ' · ' + o[k] + '</span>'; }).join(''); }
+  function list(items, key) { return items.length ? '<table class="tbl"><tbody>' + items.map(function (x) { return '<tr><td>' + esc(x[key]) + '</td><td class="num">' + x.drivers + '</td></tr>'; }).join('') + '</tbody></table>' : '<p class="mut">Пока пусто</p>'; }
+  main.innerHTML =
+    '<div class="head"><h1>Водители</h1></div><div class="grid">' +
+    st(d.drivers, 'Водителей в базе · +' + d.drivers_7d + ' за 7 дней') +
+    st(d.drivers_24h, 'Новых водителей за сутки') +
+    st(d.shippers, 'Заказчиков') +
+    st(d.not_onboarded, 'Не закончили регистрацию') +
+    st(d.notified_24h, 'Уведомлений водителям за сутки') +
+    st(d.paused, 'Уведомления на паузе') + '</div>' +
+    '<div class="card"><h2>Направления</h2>' +
+    (d.routes.length
+      ? '<div class="twrap"><table class="tbl"><thead><tr><th>Откуда</th><th></th><th>Куда</th><th class="num">Водителей</th><th>Типы машин</th></tr></thead><tbody>' +
+        d.routes.map(function (r) { return '<tr><td>' + esc(r.from) + '</td><td class="mut">' + (r.to === 'внутри региона' ? '' : (r.both_ways ? '⇄' : '→')) + '</td><td>' + esc(r.to) + '</td><td class="num"><b>' + r.drivers + '</b></td><td>' + chips(r.types) + '</td></tr>'; }).join('') +
+        '</tbody></table></div>'
+      : '<p class="mut">Пока нет водителей с направлениями</p>') + '</div>' +
+    '<div class="grid2"><div class="card"><h2>По типам машин</h2>' + list(d.by_type, 'type') + '</div>' +
+    '<div class="card"><h2>По регионам</h2>' + list(d.by_region, 'region') + '</div></div>';
+}
 
 function renderShell() {
   $('#app').innerHTML = '<div class="shell"><aside class="side"><div class="brand">adl cargo <small>админ</small></div><nav class="nav" id="nav">' +
