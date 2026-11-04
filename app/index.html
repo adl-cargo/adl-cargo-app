@@ -280,8 +280,8 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     gate_profile: ['Профиль доступен после входа через Telegram.', 'Profil Telegram orqali kirgandan keyin ochiladi.'],
     open_bot: ['Открыть @adl_cargo_bot', '@adl_cargo_bot ni ochish'], logging_in: ['Входим через Telegram…', 'Telegram orqali kirilmoqda\u2026'],
     loading_profile: ['Загружаем профиль…', 'Profil yuklanmoqda\u2026'], loading: ['Загружаем…', 'Yuklanmoqda\u2026'],
-    phone_h: ['Нужен номер телефона', 'Telefon raqami kerak'],
-    phone_t: ['Чтобы водители могли позвонить, отправьте свой номер боту: откройте бота и нажмите «Старт». Потом вернитесь сюда.', 'Haydovchilar qo\u2018ng\u2018iroq qilishi uchun raqamingizni botga yuboring: botni ochib, «Start» ni bosing. Keyin shu yerga qayting.'],
+    phone_h: ['Завершите регистрацию', 'Ro\u2018yxatdan o\u2018tishni yakunlang'],
+    phone_t: ['Откройте бота и нажмите «Старт»: нужен рабочий узбекский номер и ответ, водитель вы или заказчик. Потом вернитесь сюда.', 'Botni ochib, «Start» ni bosing: ishchi O\u2018zbekiston raqami va haydovchi yoki yuk egasi ekaningiz kerak. Keyin shu yerga qayting.'],
     route_inter: ['Между городами', 'Shaharlar o\u2018rtasida'], route_intra: ['По городу', 'Shahar ichida'],
     lbl_from: ['Откуда', 'Qayerdan'], lbl_to: ['Куда', 'Qayerga'], lbl_city: ['Город', 'Shahar'],
     pick_choose: ['Выбрать из списка', 'Ro\u2018yxatdan tanlash'], pick_search_ph: ['Поиск: город, район, посёлок, рынок', 'Qidirish: shahar, tuman, posyolka, bozor'],
@@ -327,11 +327,11 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     drv_t: ['Чтобы добавлять машины и маршруты, включите режим водителя.', 'Mashina va marshrutlarni qo\u2018shish uchun haydovchi rejimini yoqing.'],
     drv_enable: ['Включить режим водителя', 'Haydovchi rejimini yoqish'], drv_on: ['Режим водителя включён', 'Haydovchi rejimi yoqildi'],
     my_vehicles: ['Мои машины', 'Mening mashinalarim'], add_vehicle: ['Добавить машину', 'Mashina qo\u2018shish'], no_vehicles: ['Машин пока нет.', 'Hozircha mashinalar yo\u2018q.'],
-    lbl_plate: ['Госномер', 'Davlat raqami'], ph_plate: ['Например, 01A123BC', 'Masalan, 01A123BC'], lbl_brand: ['Марка (необязательно)', 'Marka (ixtiyoriy)'],
+    lbl_plate: ['Госномер (необязательно)', 'Davlat raqami (ixtiyoriy)'], ph_plate: ['Например, 01A123BC', 'Masalan, 01A123BC'], lbl_brand: ['Марка (необязательно)', 'Marka (ixtiyoriy)'],
     lbl_cap: ['Грузоподъёмность, кг (необязательно)', 'Yuk ko\u2018tarish, kg (ixtiyoriy)'], ph_cap: ['Если пусто — по типу машины', 'Bo\u2018sh bo\u2018lsa — mashina turiga ko\u2018ra'],
     lbl_vtype: ['Тип машины', 'Mashina turi'], save: ['Сохранить', 'Saqlash'], cancel: ['Отмена', 'Bekor qilish'], del: ['Удалить', 'O\u2018chirish'],
     my_routes: ['Мои маршруты', 'Mening marshrutlarim'], add_route: ['Добавить маршрут', 'Marshrut qo\u2018shish'], no_routes: ['Маршрутов пока нет.', 'Hozircha marshrutlar yo\u2018q.'],
-    both_ways: ['В обе стороны', 'Ikki tomonga'], one_way: ['В одну сторону', 'Bir tomonga'], lbl_rname: ['Название (необязательно)', 'Nomi (ixtiyoriy)'],
+    both_ways: ['В обе стороны', 'Ikki tomonga'], r_within: ['внутри региона', 'viloyat ichida'], r_any: ['любой регион', 'istalgan viloyat'], one_way: ['В одну сторону', 'Bir tomonga'], lbl_rname: ['Название (необязательно)', 'Nomi (ixtiyoriy)'],
     r_on: ['Включён', 'Yoqilgan'], r_off: ['Выключен', 'O\u2018chirilgan'], v_saved: ['Машина добавлена', 'Mashina qo\u2018shildi'], r_saved: ['Маршрут добавлен', 'Marshrut qo\u2018shildi'], deleted: ['Удалено', 'O\u2018chirildi'],
     e_rplaces: ['Выберите оба пункта маршрута.', 'Marshrutning ikkala punktini tanlang.'], e_plate: ['Введите номер автомобиля.', 'Avtomobil raqamini kiriting.'], e_vtype: ['Выберите тип машины.', 'Mashina turini tanlang.'],
     login_fail: ['Не удалось войти. Закройте приложение и откройте снова.', 'Kirib bo\u2018lmadi. Ilovani yopib, qayta oching.']
@@ -388,6 +388,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     if (/Insufficient balance/i.test(msg)) return t('f_balance');
     if (/Account blocked/i.test(msg)) return t('f_blocked');
     if (/Author has no phone/i.test(msg)) return t('f_nophone');
+    if (/Uzbek phone required/i.test(msg)) return t('phone_t');
     if (/Listing not available/i.test(msg)) return t('f_unavail');
     if (/Pickup and delivery places must differ/i.test(msg)) return t('e_same');
     if (/Select at least one vehicle/i.test(msg)) return t('e_vehicle');
@@ -559,6 +560,8 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   }
 
   /* ---------- Driver data and the "for me" filter ---------- */
+  function hasContact() { return !!(profile && (/^\+998(20|33|50|55|77|88|90|91|93|94|95|97|98|99)\d{7}$/.test(profile.phone || '') || profile.work_phone)); }
+  function regDone() { return hasContact() && !!(profile && profile.onboarded_at); }
   function isDriver() { return !!(profile && (profile.role === 'driver' || profile.role === 'both')); }
   function activeRoutes() { return routes.filter(function (r) { return r.is_active; }); }
   function hasDriverSetup() { return activeRoutes().length > 0 || vehicles.length > 0; }
@@ -577,7 +580,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     if (!session) return Promise.resolve();
     return Promise.all([
       rest('driver_vehicles?select=id,plate_number,vehicle_type,brand,capacity_kg,is_primary&order=id'),
-      rest('driver_routes?select=id,name,both_ways,is_active,driver_route_points(position,place:places(name_ru,name_uz_latn))&order=id')
+      rest('driver_routes?select=id,name,both_ways,any_destination,is_active,driver_route_points(position,place:places(name_ru,name_uz_latn))&order=id')
     ]).then(function (res) {
       vehicles = res[0] || [];
       routes = (res[1] || []).map(function (r) { r.driver_route_points = (r.driver_route_points || []).sort(function (a, b) { return a.position - b.position; }); return r; });
@@ -928,7 +931,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     if (!inTg) { gateTg(body, 'gate_create'); return; }
     if (!session) { body.appendChild(el('div', 'state', t('logging_in'))); return; }
     if (!profile) { body.appendChild(el('div', 'state', t('loading_profile'))); return; }
-    if (!profile.phone) { gateCard(body, t('phone_h'), t('phone_t'), t('open_bot'), openBot); return; }
+    if (!regDone()) { gateCard(body, t('phone_h'), t('phone_t'), t('open_bot'), openBot); return; }
     if (!form) form = newForm();
 
     var seg = el('div', 'seg');
@@ -1003,7 +1006,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
         var ph = normPhone(form.extra[xi]);
         if (ph === '') continue;
         if (!ph) return fail(t('e_extra'));
-        if (extras.indexOf(ph) < 0 && ph.replace(/\D/g, '') !== String(profile.phone || '').replace(/\D/g, '')) extras.push(ph);
+        if (extras.indexOf(ph) < 0 && ph.replace(/\D/g, '') !== String(hasContact() && !profile.work_phone ? profile.phone : (profile.work_phone || profile.phone || '')).replace(/\D/g, '')) extras.push(ph);
       }
       if (form.busy) return; form.busy = true; go.disabled = true; go.textContent = t('publishing');
       var uploaded = [];
@@ -1085,6 +1088,8 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   function routeTitle(r) {
     var pts = r.driver_route_points || [];
     if (r.name) return r.name;
+    if (r.any_destination && pts.length) return pname(pts[0].place) + ' ↔ ' + t('r_any');
+    if (pts.length === 1) return pname(pts[0].place) + ': ' + t('r_within');
     return pts.map(function (p) { return pname(p.place); }).join(r.both_ways ? ' ↔ ' : ' → ');
   }
   function renderFleet() {
@@ -1108,7 +1113,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     if (!vehicles.length && !showVForm) body.appendChild(el('div', 'state', t('no_vehicles')));
     vehicles.forEach(function (v) {
       var it = el('div', 'item'); var row = el('div', 'row');
-      row.appendChild(el('span', 't', vLabel(v.vehicle_type) + ' · ' + v.plate_number));
+      row.appendChild(el('span', 't', vLabel(v.vehicle_type) + (v.plate_number ? ' · ' + v.plate_number : '')));
       var d = el('button', 'btn sec sm danger', t('del')); d.type = 'button';
       d.addEventListener('click', function () { d.disabled = true; remove('driver_vehicles?id=eq.' + encodeURIComponent(v.id)).then(function () { toast(t('deleted')); return refreshDriverFeed(); }).then(renderFleet).catch(function (e) { d.disabled = false; toast(friendly(e.message)); }); });
       row.appendChild(d); it.appendChild(row);
@@ -1177,7 +1182,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
       function fail(m) { err.textContent = m; err.hidden = false; }
       err.hidden = true;
       if (!vform.top) return fail(t('e_vtype'));
-      var plate = plateNorm(vform.plate); if (!plate) return fail(t('e_plate')); if (!/^[A-Z0-9]{5,10}$/.test(plate)) return fail(t('f_plate'));
+      var plate = plateNorm(vform.plate) || null; if (plate && !/^[A-Z0-9]{5,10}$/.test(plate)) return fail(t('f_plate'));
       var cap = vform.cap === '' ? null : Number(vform.cap); if (cap !== null && !(cap > 0)) return fail(t('e_weight'));
       go.disabled = true;
       post('driver_vehicles', { driver_id: session.user_id, plate_number: plate, vehicle_type: vform.kid || vform.top, brand: vform.brand.trim() || null, capacity_kg: cap })
@@ -1355,7 +1360,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
 
   if (inTg) {
     login().then(function () {
-      return rest('profiles?select=full_name,phone,role,language,rating_avg,rating_count&id=eq.' + encodeURIComponent(session.user_id)).then(function (rows) { profile = rows[0] || { phone: null, role: 'shipper', language: 'ru' }; });
+      return rest('profiles?select=full_name,phone,work_phone,onboarded_at,role,language,rating_avg,rating_count&id=eq.' + encodeURIComponent(session.user_id)).then(function (rows) { profile = rows[0] || { phone: null, role: 'shipper', language: 'ru' }; });
     }).then(function () {
       /* Uzbek if either Telegram or the saved profile says so; a choice made in the app always wins */
       if (!langSaved && profile.language === 'uz' && lang !== 'uz') { lang = 'uz'; applyStatic(); renderModeSw(); renderFilters(); }
