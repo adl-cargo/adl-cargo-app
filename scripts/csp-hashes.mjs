@@ -8,7 +8,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const PAGES = ['admin/index.html'];
+const PAGES = ['index.html', 'app/index.html', 'admin/index.html'];
 const check = process.argv.includes('--check');
 let stale = 0;
 
