@@ -2,7 +2,7 @@
 <html lang="ru" data-pal="graphite" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-Xw7lnIoQfqYwZYSVM8ibD+SrjkD5v3NCzmj1N35GiHg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-5pgYOvy9nCE8eAUDgHRctq/RmwpCvG9pKTZT9yCcjxY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ADL Cargo — приложение</title>
 <meta name="robots" content="noindex">
@@ -1387,7 +1387,12 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     pf.appendChild(add); body.appendChild(pf);
     var err3 = el('div', 'err'); err3.hidden = true; body.appendChild(err3);
     var fin = el('button', 'btn pri block', t('reg_finish')); fin.type = 'button';
-    fin.addEventListener('click', function () { if (!reg.routes.length) { err3.textContent = t('reg_e_rt'); err3.hidden = false; return; } finishReg(true); });
+    fin.addEventListener('click', function () {
+      if (reg.rf.from && (reg.kind !== 'pair' || (reg.rf.to && reg.rf.from.id !== reg.rf.to.id))) {
+        reg.routes.push({ kind: reg.kind, from: reg.rf.from, to: reg.kind === 'pair' ? reg.rf.to : null, both: reg.both });
+        reg.rf = { from: null, to: null };
+      }
+      if (!reg.routes.length) { err3.textContent = t('reg_e_rt'); err3.hidden = false; return; } finishReg(true); });
     body.appendChild(fin);
     var bk2 = el('button', 'btn sec block', t('reg_back')); bk2.type = 'button'; bk2.style.marginTop = '8px';
     bk2.addEventListener('click', function () { reg.step = 'veh'; renderReg(); }); body.appendChild(bk2);
