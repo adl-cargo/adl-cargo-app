@@ -2,7 +2,7 @@
 <html lang="ru" data-pal="graphite" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-5pgYOvy9nCE8eAUDgHRctq/RmwpCvG9pKTZT9yCcjxY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-hAW8lTkbVlRMhJN2J3cFJAY4b7GNwKCJxG/t4hq1knM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ADL Cargo — приложение</title>
 <meta name="robots" content="noindex">
@@ -352,7 +352,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     lbl_vtype: ['Тип машины', 'Mashina turi'], save: ['Сохранить', 'Saqlash'], cancel: ['Отмена', 'Bekor qilish'], del: ['Удалить', 'O\u2018chirish'],
     my_routes: ['Мои маршруты', 'Mening marshrutlarim'], add_route: ['Добавить маршрут', 'Marshrut qo\u2018shish'], no_routes: ['Маршрутов пока нет.', 'Hozircha marshrutlar yo\u2018q.'],
     both_ways: ['В обе стороны', 'Ikki tomonga'], r_within: ['внутри региона', 'viloyat ichida'], r_any: ['любой регион', 'istalgan viloyat'], one_way: ['В одну сторону', 'Bir tomonga'], lbl_rname: ['Название (необязательно)', 'Nomi (ixtiyoriy)'],
-    r_on: ['Включён', 'Yoqilgan'], r_off: ['Выключен', 'O\u2018chirilgan'], v_saved: ['Машина добавлена', 'Mashina qo\u2018shildi'], r_saved: ['Маршрут добавлен', 'Marshrut qo\u2018shildi'], deleted: ['Удалено', 'O\u2018chirildi'],
+    r_on: ['Включён', 'Yoqilgan'], r_do_on: ['Включить', 'Yoqish'], r_do_off: ['Выключить', 'To\u2018xtatish'], r_off: ['Выключен', 'O\u2018chirilgan'], v_saved: ['Машина добавлена', 'Mashina qo\u2018shildi'], r_saved: ['Маршрут добавлен', 'Marshrut qo\u2018shildi'], deleted: ['Удалено', 'O\u2018chirildi'],
     e_rplaces: ['Выберите оба пункта маршрута.', 'Marshrutning ikkala punktini tanlang.'], e_plate: ['Введите номер автомобиля.', 'Avtomobil raqamini kiriting.'], e_vtype: ['Выберите тип машины.', 'Mashina turini tanlang.'],
     login_fail: ['Не удалось войти. Закройте приложение и откройте снова.', 'Kirib bo\u2018lmadi. Ilovani yopib, qayta oching.']
   };
@@ -1177,7 +1177,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
       it.appendChild(row);
       it.appendChild(el('div', 'meta', r.both_ways ? t('both_ways') : t('one_way')));
       var acts = el('div', 'row');
-      var tgl = el('button', 'btn sec sm', r.is_active ? t('r_off') : t('r_on')); tgl.type = 'button';
+      var tgl = el('button', 'btn sec sm', r.is_active ? t('r_do_off') : t('r_do_on')); tgl.type = 'button';
       tgl.addEventListener('click', function () { tgl.disabled = true; patch('driver_routes?id=eq.' + encodeURIComponent(r.id), { is_active: !r.is_active }).then(refreshDriverFeed).then(renderFleet).catch(function (e) { tgl.disabled = false; toast(friendly(e.message)); }); });
       var dl2 = el('button', 'btn sec sm danger', t('del')); dl2.type = 'button';
       dl2.addEventListener('click', function () { dl2.disabled = true; remove('driver_routes?id=eq.' + encodeURIComponent(r.id)).then(function () { toast(t('deleted')); return refreshDriverFeed(); }).then(renderFleet).catch(function (e) { dl2.disabled = false; toast(friendly(e.message)); }); });
