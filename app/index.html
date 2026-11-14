@@ -2,7 +2,7 @@
 <html lang="ru" data-pal="graphite" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-hAW8lTkbVlRMhJN2J3cFJAY4b7GNwKCJxG/t4hq1knM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-nGjFCwDX2Gr7n2iy4UMZt9rmGs/ptH5p3dZm19gRHak='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ADL Cargo — приложение</title>
 <meta name="robots" content="noindex">
@@ -544,7 +544,8 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   function kids(code) { return types.filter(function (x) { return x.parent_code === code; }); }
   function vLabel(code) { var x = typeMap[code]; if (!x) return code; return x.parent_code && typeMap[x.parent_code] ? tname(typeMap[x.parent_code]) + ' ' + tname(x) : tname(x); }
   function vGroup(code) { var x = typeMap[code]; return x && x.parent_code ? x.parent_code : code; }
-  function placeTypeLabel(code) { var x = ptypes[code]; return x ? (lang === 'uz' ? (x.name_uz || x.name_ru) : x.name_ru) : ''; }
+  /* Tashkent (id 13) is stored with type 'region' so it sits in the region lists, but people know it as a city */
+  function placeTypeLabel(code, id) { if (id === 13) return lang === 'uz' ? 'Shahar' : 'Город'; var x = ptypes[code]; return x ? (lang === 'uz' ? (x.name_uz || x.name_ru) : x.name_ru) : ''; }
 
   /* ---------- Listing pieces ---------- */
   var LISTING_SELECT = 'id,author_id,description,weight_kg,price_amount,exclusive_vehicle,route_type,status,close_reason,created_at,expires_at,contact_count,' +
@@ -815,7 +816,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
       rows.forEach(function (p) {
         var li = el('li'); var b = el('button'); b.type = 'button'; var nm = pname(p);
         b.appendChild(document.createTextNode(nm));
-        var sm = [placeTypeLabel(p.type_code), p.parent_name_ru].filter(Boolean).join(' · ');
+        var sm = [placeTypeLabel(p.type_code, p.id), p.parent_name_ru].filter(Boolean).join(' · ');
         if (sm) b.appendChild(el('small', null, sm));
         b.addEventListener('click', function () { closePick(); onPick({ id: p.id, name: nm }); });
         li.appendChild(b); list.appendChild(li);
