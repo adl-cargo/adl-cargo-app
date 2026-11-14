@@ -2,7 +2,7 @@
 <html lang="ru" data-pal="graphite" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-z+/W4gVrm78V6Qm3EDKLT7XXGqAYzeaaOPDXll1TPhk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-Xw7lnIoQfqYwZYSVM8ibD+SrjkD5v3NCzmj1N35GiHg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ADL Cargo — приложение</title>
 <meta name="robots" content="noindex">
@@ -224,6 +224,12 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
       <h1 id="h-profile" data-i18n="profile_h">Профиль</h1>
       <div id="profileBody"></div>
     </section>
+
+    <section id="v-reg" aria-labelledby="h-reg" hidden>
+      <h1 id="h-reg"></h1>
+      <p class="sub" id="regSub"></p>
+      <div id="regBody"></div>
+    </section>
   </main>
 
   <nav class="tabs" data-i18n-aria="nav_aria"><div class="in" id="tabsIn"></div></nav>
@@ -274,6 +280,16 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     phone_after_login: ['Номер открывается после входа через Telegram.', 'Raqam Telegram orqali kirgandan keyin ochiladi.'],
     phone_open_bot: ['Откройте приложение из бота, чтобы увидеть номер.', 'Raqamni ko\u2018rish uchun ilovani bot orqali oching.'], close: ['Закрыть', 'Yopish'],
     photo_alt: ['Фото груза: {0}', 'Yuk surati: {0}'], back: ['Назад к объявлению', 'E\u2019longa qaytish'], prev: ['Предыдущее фото', 'Oldingi surat'], next: ['Следующее фото', 'Keyingi surat'],
+    reg_h: ['Регистрация', 'Ro\u2018yxatdan o\u2018tish'],
+    reg_sub_role: ['Последний шаг: как вы будете пользоваться ADL Cargo?', 'Oxirgi qadam: ADL Cargo\u2019dan qanday foydalanasiz?'],
+    reg_ship: ['Я заказчик', 'Men yuk egasiman'], reg_ship_s: ['Размещаю грузы', 'Yuk joylashtiraman'],
+    reg_drv: ['Я водитель', 'Men haydovchiman'], reg_drv_s: ['Ищу грузы для своей машины', 'Mashinam uchun yuk qidiraman'],
+    reg_veh_h: ['Ваша машина', 'Mashinangiz'], reg_veh_s: ['Можно выбрать несколько типов.', 'Bir nechta turni tanlash mumkin.'],
+    reg_rt_h: ['Куда вы ездите', 'Qayerlarga borasiz'], reg_rt_s: ['Добавьте хотя бы один маршрут. Покажем грузы только по ним.', 'Kamida bitta yo\u2018nalish qo\u2018shing. Yuklarni faqat shular bo\u2018yicha ko\u2018rsatamiz.'],
+    reg_k_pair: ['Откуда → куда', 'Qayerdan \u2192 qayerga'], reg_k_in: ['Внутри региона', 'Viloyat ichida'], reg_k_any: ['Из региона куда угодно', 'Viloyatdan istalgan joyga'],
+    reg_add: ['Добавить маршрут', 'Yo\u2018nalish qo\u2018shish'], reg_next: ['Далее', 'Keyingi'], reg_back: ['Назад', 'Orqaga'],
+    reg_finish: ['Завершить регистрацию', 'Ro\u2018yxatdan o\u2018tishni yakunlash'], reg_done: ['Готово! Профиль создан.', 'Tayyor! Profil yaratildi.'],
+    reg_e_veh: ['Выберите хотя бы один тип машины.', 'Kamida bitta mashina turini tanlang.'], reg_e_rt: ['Добавьте хотя бы один маршрут.', 'Kamida bitta yo\u2018nalish qo\u2018shing.'],
     gate_h: ['Откройте приложение из бота', 'Ilovani bot orqali oching'],
     gate_create: ['Объявления создаются после входа через Telegram. Нажмите кнопку, чтобы открыть бота.', 'E\u2019lonlar Telegram orqali kirgandan keyin yaratiladi. Botni ochish uchun tugmani bosing.'],
     gate_mine: ['Свои объявления видны после входа через Telegram.', 'O\u2018z e\u2019lonlaringiz Telegram orqali kirgandan keyin ko\u2018rinadi.'],
@@ -1250,6 +1266,133 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     return p;
   }
 
+  /* ---------- Registration: the bot has taken language, phone and name; role, vehicle and routes are chosen here ---------- */
+  var reg = { step: null, driver: false, sel: {}, routes: [], kind: 'pair', both: true, rf: { from: null, to: null }, busy: false };
+  function needReg() { return !!(inTg && session && profile && hasContact() && !profile.onboarded_at); }
+  function regUrlRole() { try { return new URLSearchParams(location.search).get('reg'); } catch (e) { return null; } }
+  function regRouteText(r) {
+    if (r.kind === 'within') return r.from.name + ': ' + t('r_within');
+    if (r.kind === 'anywhere') return r.from.name + ' ↔ ' + t('r_any');
+    return r.from.name + (r.both ? ' ↔ ' : ' → ') + r.to.name;
+  }
+  function enterReg() {
+    ['feed', 'create', 'mine', 'fleet', 'profile'].forEach(function (n) { $('v-' + n).hidden = true; });
+    $('v-reg').hidden = false;
+    document.querySelector('nav.tabs').style.display = 'none'; $('modeSw').style.display = 'none';
+    window.scrollTo(0, 0); renderReg();
+  }
+  function leaveReg() {
+    $('v-reg').hidden = true;
+    document.querySelector('nav.tabs').style.display = ''; $('modeSw').style.display = '';
+  }
+  function finishReg(driver) {
+    if (reg.busy) return; reg.busy = true;
+    var args = driver
+      ? { p_is_driver: true,
+          p_vehicle_types: Object.keys(reg.sel).map(function (k) { return reg.sel[k]; }),
+          p_routes: reg.routes.map(function (r) { return { kind: r.kind, from: r.from.id, to: r.kind === 'pair' ? r.to.id : null, both_ways: r.both }; }) }
+      : { p_is_driver: false };
+    rpc('complete_onboarding', args).then(function () {
+      return rest('profiles?select=full_name,phone,work_phone,onboarded_at,role,language,rating_avg,rating_count&id=eq.' + encodeURIComponent(session.user_id));
+    }).then(function (rows) {
+      if (rows && rows[0]) profile = rows[0];
+      return loadDriver();
+    }).then(function () {
+      reg.busy = false; leaveReg(); toast(t('reg_done'));
+      uiMode = driver ? 'driver' : 'shipper'; uiSaved = true;
+      try { localStorage.setItem(UI_KEY, uiMode); } catch (e) {}
+      if (driver) { feedMode = hasDriverSetup() ? 'me' : 'all'; feedModeSet = true; }
+      renderModeSw(); show(driver ? 'feed' : 'create');
+      if (driver && feedMode === 'me') loadMe();
+    }).catch(function (e) { reg.busy = false; toast(friendly(e.message)); renderReg(); });
+  }
+  function renderReg() {
+    if ($('v-reg').hidden) return;
+    $('h-reg').textContent = t('reg_h');
+    var body = $('regBody'); body.textContent = '';
+    if (reg.step === null) { var u = regUrlRole(); if (u === 'driver') { reg.driver = true; reg.step = 'veh'; } else reg.step = 'role'; }
+    var sub = $('regSub');
+    if (reg.step === 'role') {
+      sub.textContent = t('reg_sub_role');
+      [['ship', 'box', false], ['drv', 'truck', true]].forEach(function (o) {
+        var b = el('button', 'btn ' + (o[2] ? 'pri' : 'sec') + ' block'); b.type = 'button'; b.style.marginBottom = '10px'; b.style.minHeight = '64px';
+        b.appendChild(el('div', null, t('reg_' + o[0]))); b.appendChild(el('div', 'meta', t('reg_' + o[0] + '_s')));
+        b.addEventListener('click', function () { if (o[2]) { reg.driver = true; reg.step = 'veh'; renderReg(); } else finishReg(false); });
+        body.appendChild(b);
+      });
+      return;
+    }
+    if (reg.step === 'veh') {
+      sub.textContent = t('reg_veh_h') + '. ' + t('reg_veh_s');
+      var p = el('div', 'panel'); var chips = el('div', 'chips'); p.appendChild(chips);
+      tops().forEach(function (x) {
+        var b = el('button', 'vb', tname(x)); b.type = 'button'; b.setAttribute('aria-pressed', String(!!reg.sel[x.code]));
+        b.addEventListener('click', function () { if (reg.sel[x.code]) delete reg.sel[x.code]; else reg.sel[x.code] = x.code; renderReg(); });
+        chips.appendChild(b);
+      });
+      tops().forEach(function (x) {
+        var ks = kids(x.code); if (!reg.sel[x.code] || !ks.length) return;
+        var row = el('div'); row.style.marginTop = '12px'; row.appendChild(el('label', 'l', tname(x)));
+        var kc = el('div', 'chips');
+        ks.forEach(function (k) {
+          var kb = el('button', 'vb', tname(k)); kb.type = 'button'; kb.setAttribute('aria-pressed', String(reg.sel[x.code] === k.code));
+          kb.addEventListener('click', function () { reg.sel[x.code] = reg.sel[x.code] === k.code ? x.code : k.code; renderReg(); });
+          kc.appendChild(kb);
+        });
+        row.appendChild(kc); p.appendChild(row);
+      });
+      var err = el('div', 'err'); err.hidden = true; p.appendChild(err);
+      var nx = el('button', 'btn pri block', t('reg_next')); nx.type = 'button'; nx.style.marginTop = '16px';
+      nx.addEventListener('click', function () { if (!Object.keys(reg.sel).length) { err.textContent = t('reg_e_veh'); err.hidden = false; return; } reg.step = 'routes'; renderReg(); });
+      p.appendChild(nx);
+      var bk = el('button', 'btn sec block', t('reg_back')); bk.type = 'button'; bk.style.marginTop = '8px';
+      bk.addEventListener('click', function () { reg.step = 'role'; reg.driver = false; renderReg(); }); p.appendChild(bk);
+      body.appendChild(p); return;
+    }
+    sub.textContent = t('reg_rt_h') + '. ' + t('reg_rt_s');
+    reg.routes.forEach(function (r, i) {
+      var it = el('div', 'item'); var row = el('div', 'row');
+      row.appendChild(el('span', 't', regRouteText(r)));
+      var d = el('button', 'btn sec sm danger', t('del')); d.type = 'button';
+      d.addEventListener('click', function () { reg.routes.splice(i, 1); renderReg(); });
+      row.appendChild(d); it.appendChild(row); body.appendChild(it);
+    });
+    var pf = el('div', 'panel');
+    var seg = el('div', 'seg');
+    [['pair', 'reg_k_pair'], ['within', 'reg_k_in'], ['anywhere', 'reg_k_any']].forEach(function (o) {
+      var b = el('button', null, t(o[1])); b.type = 'button'; b.setAttribute('aria-pressed', String(reg.kind === o[0]));
+      b.addEventListener('click', function () { reg.kind = o[0]; renderReg(); }); seg.appendChild(b);
+    });
+    pf.appendChild(seg);
+    var gap = el('div'); gap.style.height = '14px'; pf.appendChild(gap);
+    pf.appendChild(placeField(reg.rf, 'from', t('lbl_from')));
+    if (reg.kind === 'pair') {
+      pf.appendChild(placeField(reg.rf, 'to', t('lbl_to')));
+      var bw = el('div', 'seg'); bw.style.marginTop = '14px';
+      [[true, 'both_ways'], [false, 'one_way']].forEach(function (o) {
+        var b = el('button', null, t(o[1])); b.type = 'button'; b.setAttribute('aria-pressed', String(reg.both === o[0]));
+        b.addEventListener('click', function () { reg.both = o[0]; renderReg(); }); bw.appendChild(b);
+      });
+      pf.appendChild(bw);
+    }
+    var err2 = el('div', 'err'); err2.hidden = true; pf.appendChild(err2);
+    var add = el('button', 'btn sec block', '+ ' + t('reg_add')); add.type = 'button'; add.style.marginTop = '14px';
+    add.addEventListener('click', function () {
+      function fail(m) { err2.textContent = m; err2.hidden = false; }
+      if (!reg.rf.from) return fail(t('e_rplaces'));
+      if (reg.kind === 'pair') { if (!reg.rf.to) return fail(t('e_rplaces')); if (reg.rf.from.id === reg.rf.to.id) return fail(t('e_same')); }
+      reg.routes.push({ kind: reg.kind, from: reg.rf.from, to: reg.kind === 'pair' ? reg.rf.to : null, both: reg.both });
+      reg.rf = { from: null, to: null }; renderReg();
+    });
+    pf.appendChild(add); body.appendChild(pf);
+    var err3 = el('div', 'err'); err3.hidden = true; body.appendChild(err3);
+    var fin = el('button', 'btn pri block', t('reg_finish')); fin.type = 'button';
+    fin.addEventListener('click', function () { if (!reg.routes.length) { err3.textContent = t('reg_e_rt'); err3.hidden = false; return; } finishReg(true); });
+    body.appendChild(fin);
+    var bk2 = el('button', 'btn sec block', t('reg_back')); bk2.type = 'button'; bk2.style.marginTop = '8px';
+    bk2.addEventListener('click', function () { reg.step = 'veh'; renderReg(); }); body.appendChild(bk2);
+  }
+
   /* ---------- Profile ---------- */
   function renderProfile() {
     var body = $('profileBody'); body.textContent = '';
@@ -1336,6 +1479,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     } else apply();
   }
   function show(name) {
+    if (needReg()) { enterReg(); return; }
     if (!TABS[uiMode].some(function (tb) { return tb[0] === name; })) name = TABS[uiMode][0][0];
     current = name;
     ['feed', 'create', 'mine', 'fleet', 'profile'].forEach(function (n) { $('v-' + n).hidden = n !== name; });
@@ -1363,7 +1507,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   }
   function renderAll() {
     applyStatic(); closeDlg(); closePick(); renderModeSw(); renderTabs(); renderFeedModeBar(); renderFilters();
-    renderFeed(); renderCreate(); renderMine(); renderFleet(); renderProfile();
+    renderFeed(); renderCreate(); renderMine(); renderFleet(); renderProfile(); renderReg();
   }
   [].forEach.call(document.querySelectorAll('#langBar button'), function (b) {
     b.addEventListener('click', function () {
