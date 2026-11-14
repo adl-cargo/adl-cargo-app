@@ -2,7 +2,7 @@
 <html lang="ru" data-pal="graphite" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-d4w7O7zEjxdY/gAQd4QUtrT0mm7mpVybH2QYvtJhlRM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-z+/W4gVrm78V6Qm3EDKLT7XXGqAYzeaaOPDXll1TPhk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ADL Cargo — приложение</title>
 <meta name="robots" content="noindex">
@@ -317,6 +317,9 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     e_desc_contacts: ['В описании нельзя указывать телефоны и контакты. Номера добавьте в поле «Дополнительные номера».', 'Tavsifda telefon va kontaktlarni ko\u2018rsatish mumkin emas. Raqamlarni «Qo\u2018shimcha raqamlar» maydoniga yozing.'],
     f_plate: ['Проверьте номер автомобиля: 5–10 латинских букв и цифр, например 01A123BC.', 'Avtomobil raqamini tekshiring: 5\u201310 ta lotin harfi va raqam, masalan 01A123BC.'],
     f_dupe: ['Эта машина уже добавлена.', 'Bu mashina allaqachon qo\u2018shilgan.'], f_role: ['Сначала включите режим водителя.', 'Avval haydovchi rejimini yoqing.'],
+    st_pending: ['Ждёт оплаты', 'To\u2018lov kutilmoqda'], pay_btn: ['Оплатить', 'To\u2018lash'], pay_opening: ['Открываем оплату…', 'To\u2018lov ochilmoqda…'],
+    pay_note: ['Объявление появится на доске сразу после оплаты.', 'E\u2019lon to\u2018lovdan so\u2018ng darhol doskada paydo bo\u2018ladi.'], pay_fail: ['Не удалось открыть оплату. Попробуйте ещё раз.', 'To\u2018lovni ochib bo\u2018lmadi. Qayta urinib ko\u2018ring.'],
+    pay_after_h: ['Объявление создано', 'E\u2019lon yaratildi'],
     st_active: ['Активно до {0}', '{0} gacha faol'], st_deal: ['Договорились', 'Kelishildi'], st_closed: ['Снято', 'Olib tashlangan'], st_removed: ['Удалено', 'O\u2018chirilgan'], st_expired: ['Истекло', 'Muddati tugagan'],
     created: ['Создано {0} · номер открыли: {1}', 'Yaratilgan {0} · raqamni ochishdi: {1}'], take_off: ['Снять с доски', 'Doskadan olib tashlash'],
     mine_empty_h: ['Пока пусто', 'Hozircha bo\u2018sh'], mine_empty_t: ['Вы ещё не размещали объявления.', 'Siz hali e\u2019lon joylamagansiz.'], mine_empty_btn: ['Создать объявление', 'E\u2019lon yaratish'],
@@ -1033,6 +1036,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
 
   /* ---------- My listings (shipper mode) ---------- */
   function statusOf(l) {
+    if (l.status === 'pending_payment') return { text: t('st_pending'), on: false, pending: true };
     if (l.status === 'active' && new Date(l.expires_at) > new Date()) return { text: t('st_active', dmy(l.expires_at)), on: true };
     if (l.status === 'closed') return { text: l.close_reason === 'deal' ? t('st_deal') : t('st_closed'), on: false };
     if (l.status === 'removed') return { text: t('st_removed'), on: false };
@@ -1056,10 +1060,31 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
       row.appendChild(el('span', 'meta', t('created', dmy(l.created_at), l.contact_count || 0)));
       row.appendChild(el('span', 'pr' + (l.price_amount == null ? ' neg' : ''), fmtPrice(l.price_amount)));
       c.appendChild(row);
+      if (st.pending) {
+        c.appendChild(el('div', 'meta', t('pay_note')));
+        var pb = el('button', 'btn sm', t('pay_btn')); pb.type = 'button';
+        pb.addEventListener('click', function () { payListing(l, pb); });
+        c.appendChild(pb);
+      }
       if (st.on) { var b = el('button', 'btn sec sm', t('take_off')); b.type = 'button'; b.addEventListener('click', function () { askClose(l); }); c.appendChild(b); }
       body.appendChild(c);
     });
   }
+  function payListing(l, btn) {
+    if (btn.disabled) return; btn.disabled = true; var label = btn.textContent; btn.textContent = t('pay_opening');
+    rpc('listing_payment', { p_listing_id: l.id }).then(function (res) {
+      var r = Array.isArray(res) ? res[0] : res;
+      var url = r && r.url;
+      if (!url || String(url).indexOf('https://my.click.uz/') !== 0) throw new Error('no_url');
+      if (tg && tg.openLink) tg.openLink(url); else window.open(url, '_blank', 'noopener');
+      btn.disabled = false; btn.textContent = label;
+      awaitingPay = true;
+    }).catch(function () { btn.disabled = false; btn.textContent = label; toast(t('pay_fail')); });
+  }
+  var awaitingPay = false;
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && awaitingPay) { awaitingPay = false; feedAll = null; loadMine(); }
+  });
   function askClose(l) {
     openDlg(function (body) {
       dlgHead(body, el('h3', null, t('close_h')));
