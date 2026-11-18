@@ -1,8 +1,8 @@
 # Vercel serves this repository's root as a static site (no framework, no build step).
 # Allowlist: publish only the public pages; everything else in the repository (README,
 # scripts, future docs or server code) is not deployed.
-# The pages load nothing else from this site: no images, icons, manifests, scripts or styles
-# of their own (fonts, Telegram scripts and the Supabase API come from other domains).
+# The pages load only their font files from this site (/fonts); no images, icons, manifests,
+# scripts or styles of their own (Telegram scripts and the Supabase API come from other domains).
 # When adding a public asset (for example favicon.ico or robots.txt), add a "!" line for it here.
 
 /*
@@ -11,3 +11,4 @@
 !admin
 !oferta
 !privacy
+!fonts
