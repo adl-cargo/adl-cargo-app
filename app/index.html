@@ -2,7 +2,7 @@
 <html lang="ru" data-pal="graphite" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-qkqf1Slnf0AtnzClyUVpp4x5ahCTMHeRxyMTxedFVcg='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-4cmbryACURBSvgmmaqXNJMHcAoKDRpRvHAaWl3n1OLk='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ADL Cargo — приложение</title>
 <meta name="robots" content="noindex">
@@ -495,11 +495,22 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function jwtExp(tok) { try { return JSON.parse(atob(tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).exp || 0; } catch (e) { return 0; } }
-  /* the sign-in token lives about an hour; reuse it on reopen instead of signing in again */
-  function savedSession() {
+  /* the sign-in token lives about an hour; reuse it on reopen instead of signing in again,
+     and when it has expired, renew it with the refresh token (a quick call, no Telegram sign-in) */
+  function storedSession() {
     var s = TGUID && lsGet('adlcargo-sess');
-    if (!s || s.uid !== TGUID || !s.session || !s.session.access_token) return null;
-    return jwtExp(s.session.access_token) - Date.now() / 1000 > 120 ? s.session : null;
+    return s && s.uid === TGUID && s.session && s.session.access_token ? s.session : null;
+  }
+  function fresh(s) { return !!(s && jwtExp(s.access_token) - Date.now() / 1000 > 120); }
+  function keepSession(s) { session = s; if (TGUID) lsSet('adlcargo-sess', { uid: TGUID, session: s }); return s; }
+  function refreshSession(s) {
+    return fetch(SB + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: KEY }, body: JSON.stringify({ refresh_token: s.refresh_token })
+    }).then(function (r) {
+      return r.json().then(function (j) { if (!r.ok || !j.access_token) throw new Error('refresh failed'); return j; });
+    }).then(function (j) {
+      return keepSession({ access_token: j.access_token, refresh_token: j.refresh_token, user_id: (j.user && j.user.id) || s.user_id });
+    });
   }
   var UKEY = TGUID ? 'adlcargo-u-' + TGUID : null;
   var CACHE_MAX = 12 * 3600 * 1000;
@@ -515,10 +526,13 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
       box.appendChild(c);
     }
   }
+  /* one sign-in at a time: renew with the refresh token if there is one, otherwise (or if that fails) sign in through Telegram */
   var loginP = null;
   function login() {
     if (loginP) return loginP;
-    loginP = loginNow().then(function (s) { loginP = null; return s; }, function (e) { loginP = null; throw e; });
+    var s = session;
+    var p = s && s.refresh_token ? refreshSession(s).catch(function () { return loginNow(); }) : loginNow();
+    loginP = p.then(function (x) { loginP = null; return x; }, function (e) { loginP = null; throw e; });
     return loginP;
   }
   function loginNow() {
@@ -527,9 +541,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     }).then(function (r) {
       return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'auth failed'); return j; });
     }).then(function (j) {
-      session = { access_token: j.access_token, refresh_token: j.refresh_token, user_id: j.user_id };
-      if (TGUID) lsSet('adlcargo-sess', { uid: TGUID, session: session });
-      return session;
+      return keepSession({ access_token: j.access_token, refresh_token: j.refresh_token, user_id: j.user_id });
     });
   }
 
@@ -1587,8 +1599,8 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   /* signed in less than an hour ago on this phone: reuse the session and show the last data right away */
   var fromCache = false;
   if (inTg) {
-    var ss = savedSession(), uc = UKEY && lsGet(UKEY);
-    if (ss) session = ss;
+    var ss = storedSession(), uc = UKEY && lsGet(UKEY);
+    if (ss) session = ss;   /* if it has expired, login() below renews it before any personal data is asked for */
     if (ss && uc && uc.profile && Date.now() - (uc.t || 0) < CACHE_MAX) {
       fromCache = true;
       profile = uc.profile; vehicles = uc.vehicles || []; routes = uc.routes || [];
@@ -1607,7 +1619,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   rest('place_types?select=code,name_ru,name_uz').then(function (rows) { rows.forEach(function (x) { ptypes[x.code] = x; }); lsSet('adlcargo-static', { types: types, ptypes: ptypes }); }).catch(function () {});
 
   if (inTg) {
-    (session ? Promise.resolve(session) : login()).then(function () {
+    (fresh(session) ? Promise.resolve(session) : login()).then(function () {
       /* profile, vehicles, routes and the driver's feed load together, not one after another */
       if (uiMode === 'driver' || (profile && profile.role === 'driver') || routes.length) {
         meEarly = { p: fetchMe(), t: Date.now() };
