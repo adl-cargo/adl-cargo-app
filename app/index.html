@@ -2,13 +2,17 @@
 <html lang="ru" data-pal="graphite" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-nGjFCwDX2Gr7n2iy4UMZt9rmGs/ptH5p3dZm19gRHak='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-qkqf1Slnf0AtnzClyUVpp4x5ahCTMHeRxyMTxedFVcg='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ADL Cargo — приложение</title>
 <meta name="robots" content="noindex">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preload" href="/fonts/geologica-cyrillic-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/geologica-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:'Geologica';font-style:normal;font-display:swap;font-weight:100 900;src:url(/fonts/geologica-cyrillic-ext-wght-normal.woff2) format('woff2');unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}
+@font-face{font-family:'Geologica';font-style:normal;font-display:swap;font-weight:100 900;src:url(/fonts/geologica-cyrillic-wght-normal.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Geologica';font-style:normal;font-display:swap;font-weight:100 900;src:url(/fonts/geologica-latin-wght-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+</style>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 
@@ -93,6 +97,11 @@ html[data-theme=dark] .btn.danger{color:#FFB4AB;border-color:#FFB4AB}
 .panel p{margin:0 0 12px;color:var(--tx2);font-size:14px}
 .panel .btn+.btn{margin-top:8px}
 .state{padding:20px 4px;color:var(--tx2);font-size:15px}
+.lc.sk{cursor:default;pointer-events:none}
+.sk i{display:block;height:12px;border-radius:6px;background:var(--line);animation:skp 1.2s ease-in-out infinite}
+.sk i.w1{width:70%;height:15px}.sk i.w2{width:45%}.sk i.w3{width:90%}.sk i.w4{width:30%;align-self:flex-end}
+@keyframes skp{0%,100%{opacity:.55}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.sk i{animation:none}}
 .note{background:var(--soft);color:var(--softink);border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
 .kv{display:grid;grid-template-columns:96px 1fr;gap:6px 12px;font-size:15px;margin:0}
 .kv dt{color:var(--tx3)}.kv dd{margin:0;word-break:break-word}
@@ -481,12 +490,47 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   function post(table, body, wantRows) { return call('/rest/v1/' + table, { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: wantRows ? 'return=representation' : 'return=minimal' }, body: JSON.stringify(body) }); }
   function patch(q, body) { return call('/rest/v1/' + q, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(body) }); }
   function remove(q) { return call('/rest/v1/' + q, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); }
+  /* ---------- Fast start: remembered session and last seen data (this device only) ---------- */
+  var TGUID = (inTg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) ? String(tg.initDataUnsafe.user.id) : null;
+  function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function jwtExp(tok) { try { return JSON.parse(atob(tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).exp || 0; } catch (e) { return 0; } }
+  /* the sign-in token lives about an hour; reuse it on reopen instead of signing in again */
+  function savedSession() {
+    var s = TGUID && lsGet('adlcargo-sess');
+    if (!s || s.uid !== TGUID || !s.session || !s.session.access_token) return null;
+    return jwtExp(s.session.access_token) - Date.now() / 1000 > 120 ? s.session : null;
+  }
+  var UKEY = TGUID ? 'adlcargo-u-' + TGUID : null;
+  var CACHE_MAX = 12 * 3600 * 1000;
+  function persist() {
+    if (!UKEY || !session) return;
+    lsSet(UKEY, { t: Date.now(), profile: profile, vehicles: vehicles, routes: routes,
+      feedAll: Array.isArray(feedAll) ? feedAll : null, feedMe: Array.isArray(feedMe) ? feedMe : null });
+  }
+  function skeleton(box) {
+    for (var i = 0; i < 4; i++) {
+      var c = el('div', 'lc sk');
+      ['w1', 'w2', 'w3', 'w4'].forEach(function (w) { c.appendChild(el('i', w)); });
+      box.appendChild(c);
+    }
+  }
+  var loginP = null;
   function login() {
+    if (loginP) return loginP;
+    loginP = loginNow().then(function (s) { loginP = null; return s; }, function (e) { loginP = null; throw e; });
+    return loginP;
+  }
+  function loginNow() {
     return fetch(SB + '/functions/v1/telegram-auth', {
       method: 'POST', headers: { 'Content-Type': 'application/json', apikey: KEY }, body: JSON.stringify({ initData: tg.initData })
     }).then(function (r) {
       return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'auth failed'); return j; });
-    }).then(function (j) { session = { access_token: j.access_token, refresh_token: j.refresh_token, user_id: j.user_id }; return session; });
+    }).then(function (j) {
+      session = { access_token: j.access_token, refresh_token: j.refresh_token, user_id: j.user_id };
+      if (TGUID) lsSet('adlcargo-sess', { uid: TGUID, session: session });
+      return session;
+    });
   }
 
   /* ---------- Photos: view URL, compress, upload ---------- */
@@ -605,20 +649,25 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     ]).then(function (res) {
       vehicles = res[0] || [];
       routes = (res[1] || []).map(function (r) { r.driver_route_points = (r.driver_route_points || []).sort(function (a, b) { return a.position - b.position; }); return r; });
+      persist();
     }).catch(function () {});
   }
+  /* all listings matching the driver's active routes, in one request */
+  function fetchMe() { return rest('rpc/driver_feed?select=' + LISTING_SELECT + '&order=created_at.desc'); }
+  var meEarly = null;   // { p, t }: started at boot together with the profile
   function loadMe() {
     var act = activeRoutes();
     if (!act.length) { feedMe = null; renderFeed(); return Promise.resolve(); }
-    feedMe = 'loading'; renderFeed();
-    return Promise.all(act.map(function (r) { return rpc('listings_for_route', { p_route_id: r.id }); })).then(function (lists) {
-      var ids = [], seen = {};
-      lists.forEach(function (rows) { (rows || []).forEach(function (l) { if (!seen[l.id]) { seen[l.id] = 1; ids.push(l.id); } }); });
-      if (!ids.length) return [];
-      return rest('listings?select=' + LISTING_SELECT + '&id=in.(' + ids.join(',') + ')&order=created_at.desc');
-    }).then(function (rows) { feedMe = rows; renderFeed(); })
-      .catch(function () { feedMe = 'error'; renderFeed(); });
+    if (!Array.isArray(feedMe)) { feedMe = 'loading'; renderFeed(); }
+    if (meBusy) return meBusy;
+    var p = meEarly && Date.now() - meEarly.t < 20000 ? meEarly.p : fetchMe();
+    meEarly = null;
+    meBusy = p.then(function (rows) { feedMe = rows || []; renderFeed(); persist(); })
+      .catch(function () { if (!Array.isArray(feedMe)) { feedMe = 'error'; renderFeed(); } })
+      .then(function () { meBusy = null; });
+    return meBusy;
   }
+  var meBusy = null, allBusy = null;
   function refreshDriverFeed() {
     return loadDriver().then(function () {
       if (!feedModeSet) feedMode = hasDriverSetup() ? 'me' : 'all';
@@ -663,7 +712,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
       var nb = el('button', 'btn pri sm', t('me_setup_btn')); nb.type = 'button'; nb.addEventListener('click', function () { show('fleet'); }); n.appendChild(nb); note.appendChild(n);
     }
     if (base === 'error') { box.appendChild(stateNode(t('feed_err'), t('retry'), function () { useMe && activeRoutes().length ? loadMe() : loadFeed(); })); return; }
-    if (!base || base === 'loading') { box.appendChild(el('div', 'state', t('feed_loading'))); return; }
+    if (!base || base === 'loading') { skeleton(box); return; }
     var rows = base.slice();
     if (useMe) rows = rows.filter(fitsDriver);
     rows = rows.filter(function (l) { return group === 'all' || (l.listing_vehicle_types || []).some(function (x) { return vGroup(x.vehicle_type) === group; }); });
@@ -688,10 +737,14 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     });
   }
   function loadFeed() {
-    feedAll = null; renderFeed();
-    return rest('listings?select=' + LISTING_SELECT + '&status=eq.active&order=created_at.desc&limit=60')
-      .then(function (rows) { feedAll = rows; renderFeed(); })
-      .catch(function () { feedAll = 'error'; renderFeed(); });
+    /* a feed already on screen stays while the fresh one loads */
+    if (!Array.isArray(feedAll)) { feedAll = null; renderFeed(); }
+    if (allBusy) return allBusy;
+    allBusy = rest('listings?select=' + LISTING_SELECT + '&status=eq.active&order=created_at.desc&limit=60')
+      .then(function (rows) { feedAll = rows; renderFeed(); persist(); })
+      .catch(function () { if (!Array.isArray(feedAll)) { feedAll = 'error'; renderFeed(); } })
+      .then(function () { allBusy = null; });
+    return allBusy;
   }
 
   /* ---------- Dialog, details, gallery ---------- */
@@ -1527,25 +1580,53 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
 
   /* ---------- Boot ---------- */
   if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} try { if (tg.disableVerticalSwipes) tg.disableVerticalSwipes(); } catch (e) {} }
+  /* reference lists (vehicle and place types) from the last visit render at once */
+  var stc = lsGet('adlcargo-static');
+  if (stc && Array.isArray(stc.types)) { types = stc.types; indexTypes(); }
+  if (stc && stc.ptypes) ptypes = stc.ptypes;
+  /* signed in less than an hour ago on this phone: reuse the session and show the last data right away */
+  var fromCache = false;
+  if (inTg) {
+    var ss = savedSession(), uc = UKEY && lsGet(UKEY);
+    if (ss) session = ss;
+    if (ss && uc && uc.profile && Date.now() - (uc.t || 0) < CACHE_MAX) {
+      fromCache = true;
+      profile = uc.profile; vehicles = uc.vehicles || []; routes = uc.routes || [];
+      if (Array.isArray(uc.feedAll)) feedAll = uc.feedAll;
+      if (Array.isArray(uc.feedMe)) feedMe = uc.feedMe;
+      if (!langSaved && profile.language === 'uz' && lang !== 'uz') lang = 'uz';
+      if (!feedModeSet) feedMode = hasDriverSetup() ? 'me' : 'all';
+      if (!uiSaved && profile.role === 'driver') uiMode = 'driver';
+    }
+  }
   applyStatic(); renderModeSw(); renderFilters();
   show(uiMode === 'driver' ? 'feed' : 'create');
   rest('vehicle_types?select=code,name_ru,name_uz,max_weight_kg,parent_code,sort_order&is_active=eq.true&order=sort_order')
-    .then(function (rows) { types = rows; indexTypes(); renderFilters(); renderFeed(); if (current === 'create') renderCreate(); if (current === 'fleet') renderFleet(); })
+    .then(function (rows) { types = rows; indexTypes(); lsSet('adlcargo-static', { types: types, ptypes: ptypes }); renderFilters(); renderFeed(); if (current === 'create') renderCreate(); if (current === 'fleet') renderFleet(); })
     .catch(function () {});
-  rest('place_types?select=code,name_ru,name_uz').then(function (rows) { rows.forEach(function (x) { ptypes[x.code] = x; }); }).catch(function () {});
+  rest('place_types?select=code,name_ru,name_uz').then(function (rows) { rows.forEach(function (x) { ptypes[x.code] = x; }); lsSet('adlcargo-static', { types: types, ptypes: ptypes }); }).catch(function () {});
 
   if (inTg) {
-    login().then(function () {
-      return rest('profiles?select=full_name,phone,work_phone,onboarded_at,role,language,rating_avg,rating_count&id=eq.' + encodeURIComponent(session.user_id)).then(function (rows) { profile = rows[0] || { phone: null, role: 'shipper', language: 'ru' }; });
+    (session ? Promise.resolve(session) : login()).then(function () {
+      /* profile, vehicles, routes and the driver's feed load together, not one after another */
+      if (uiMode === 'driver' || (profile && profile.role === 'driver') || routes.length) {
+        meEarly = { p: fetchMe(), t: Date.now() };
+        meEarly.p.catch(function () {});
+      }
+      return Promise.all([
+        rest('profiles?select=full_name,phone,work_phone,onboarded_at,role,language,rating_avg,rating_count&id=eq.' + encodeURIComponent(session.user_id)).then(function (rows) { profile = rows[0] || { phone: null, role: 'shipper', language: 'ru' }; }),
+        loadDriver()
+      ]);
     }).then(function () {
       /* Uzbek if either Telegram or the saved profile says so; a choice made in the app always wins */
       if (!langSaved && profile.language === 'uz' && lang !== 'uz') { lang = 'uz'; applyStatic(); renderModeSw(); renderFilters(); }
-      return loadDriver();
+      persist();
     }).then(function () {
       if (!feedModeSet) feedMode = hasDriverSetup() ? 'me' : 'all';
       /* A person registered as a driver starts in driver mode, unless they already chose or tapped something */
       if (!uiSaved && !userTouched && profile.role === 'driver') { uiMode = 'driver'; renderModeSw(); show('feed'); }
       else show(current);
+      if (fromCache && current === 'feed') loadFeed();   /* the cached feed on screen gets refreshed */
       if (current === 'feed' && feedMode === 'me') loadMe();
     }).catch(function () { toast(t('login_fail')); });
   } else {
