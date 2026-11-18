@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-sCXhwl8ULYbEdou+XkUdNnFKuq783S8OL8SCOLmj0Lg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; frame-src https://oauth.telegram.org; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-9K8FkpjCVkDFQO3ZttQSm4ao29UCIM3owBnkS/bZAuE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; frame-src https://oauth.telegram.org; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; worker-src 'none'">
 <title>ADL Cargo · Админ-панель</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -187,7 +187,37 @@ function errText(e) { return (e && ERR[e.code]) || (e && e.message && !e.code ? 
 function mkErr(code, status) { var e = new Error(code); e.code = code; e.status = status; return e; }
 
 // ---------- API ----------
+// Read-only answers are kept for 5 minutes: a section opened before shows instantly and
+// then quietly refreshes. Any change (ban, remove, role…) clears everything.
+var READS = { dashboard: 1, 'drivers.stats': 1, 'listings.list': 1, 'listings.get': 1, 'users.list': 1, 'users.get': 1, 'reports.list': 1, 'ratings.list': 1, 'audit.list': 1, 'staff.list': 1, 'settings.list': 1 };
+var KEEP = { me: 1, refresh: 1, 'confirmation.status': 1 };
+var CACHE = {}, CACHE_TTL = 5 * 60 * 1000, PASS = null;
+function ckey(a, p) { return a + '|' + JSON.stringify(p || {}); }
 async function api(action, params) {
+  if (!READS[action]) {
+    if (!KEEP[action]) CACHE = {};
+    return apiNet(action, params);
+  }
+  var k = ckey(action, params), pass = PASS;
+  if (pass) pass.used.push([action, params, k]);
+  var c = CACHE[k];
+  if (pass && c && Date.now() - c.t < CACHE_TTL) { pass.hit = true; return c.data; }
+  var d = await apiNet(action, params);
+  CACHE[k] = { t: Date.now(), data: d, j: JSON.stringify(d) };
+  return d;
+}
+async function revalidate(used) {
+  var changed = false;
+  await Promise.all(used.map(function (u) {
+    return apiNet(u[0], u[1]).then(function (d) {
+      var j = JSON.stringify(d), c = CACHE[u[2]];
+      if (!c || c.j !== j) changed = true;
+      CACHE[u[2]] = { t: Date.now(), data: d, j: j };
+    }, function () {});
+  }));
+  return changed;
+}
+async function apiNet(action, params) {
   var res;
   try {
     var headers = { 'Content-Type': 'application/json' };
@@ -303,9 +333,12 @@ function notesBlock(type, id, items) {
 
 // ---------- views ----------
 async function vDash(main) {
-  var d = await api('dashboard');
-  var stale = await api('listings.list', { stale: true, size: 5 });
-  var ds = await api('drivers.stats').catch(function () { return null; });
+  var all = await Promise.all([
+    api('dashboard'),
+    api('listings.list', { stale: true, size: 5 }),
+    api('drivers.stats').catch(function () { return null; })
+  ]);
+  var d = all[0], stale = all[1], ds = all[2];
   main.innerHTML =
     '<div class="head"><h1>Обзор</h1></div><div class="grid">' +
     '<a class="stat" href="#/users"><div class="n">' + d.users + '</div><div class="l">Пользователей · +' + d.users_7d + ' за 7 дней</div></a>' +
@@ -511,7 +544,7 @@ async function vSettings(main) {
 
 // ---------- actions ----------
 var H = {
-  reload: function () { route(); },
+  reload: function () { CACHE = {}; route(); },
   logout: function () { logout(); },
   more: function () { moreSheet(); },
   theme: function () {
@@ -647,7 +680,7 @@ function moreSheet() {
 }
 function curView() { return ((location.hash.slice(1) || '/dashboard').split('?')[0].split('/').filter(Boolean)[0]) || 'dashboard'; }
 
-async function route() {
+async function route(quiet) {
   if (!S) return;
   var seq = ++RS;
   var raw = location.hash.slice(1) || '/dashboard';
@@ -659,16 +692,30 @@ async function route() {
   document.querySelectorAll('#tabbar a').forEach(function (a) { a.classList.toggle('on', a.dataset.n === (inTabs(name) ? name : 'more')); });
   tgBack(name !== 'dashboard' || !!parts[1]);
   var main = $('#main');
-  main.innerHTML = '<div class="mut pad">Загрузка…</div>';
+  var pass = { used: [], hit: false, done: false };
+  PASS = pass;
+  // show "loading" only if the answer takes noticeably long (cached sections render at once)
+  var lt = quiet ? 0 : setTimeout(function () { if (seq === RS && !pass.done) main.innerHTML = '<div class="mut pad">Загрузка…</div>'; }, 150);
   try {
     await VIEWS[name](main, parts[1], new URLSearchParams(parts0[1] || ''));
   } catch (e) {
+    pass.hit = false;
     if (!S || seq !== RS) return;
     main.innerHTML = '<div class="card"><p>' + esc(errText(e)) + '</p><button class="btn" data-do="reload">Повторить</button></div>';
+  } finally {
+    pass.done = true;
+    if (lt) clearTimeout(lt);
+    if (PASS === pass) PASS = null;
   }
-  if (seq === RS) window.scrollTo(0, 0);
+  if (seq !== RS) return;
+  if (!quiet) window.scrollTo(0, 0);
+  if (pass.hit && await revalidate(pass.used) && seq === RS && S) {
+    var f = document.activeElement;
+    var typing = f && main.contains(f) && /^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName);
+    if (!typing && !document.querySelector('.mback')) route(true);
+  }
 }
-window.addEventListener('hashchange', route);
+window.addEventListener('hashchange', function () { route(); });
 
 // ---------- session ----------
 function save() { try { sessionStorage.setItem('adm', JSON.stringify(S)); } catch (e) {} }
@@ -676,6 +723,7 @@ function stopTimers() { timers.forEach(clearInterval); timers = []; }
 
 function logout(msg) {
   S = null;
+  CACHE = {};
   try { sessionStorage.removeItem('adm'); } catch (e) {}
   stopTimers();
   closeModal();
