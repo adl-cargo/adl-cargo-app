@@ -2,7 +2,7 @@
 <html lang="ru" data-pal="graphite" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-4cmbryACURBSvgmmaqXNJMHcAoKDRpRvHAaWl3n1OLk='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-CO9cv7dkt9z5qW7dbnictTDbLDsdPAuj8VU7mPBmQMI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ADL Cargo — приложение</title>
 <meta name="robots" content="noindex">
@@ -445,6 +445,23 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   var current = null;
   try { var su = localStorage.getItem(UI_KEY); if (su === 'shipper' || su === 'driver') { uiMode = su; uiSaved = true; } } catch (e) {}
   if (!uiMode) uiMode = inTg ? 'shipper' : 'driver';
+  /* ВРЕМЕННО: режим «только водители» (app_settings.drivers_only, функция is_drivers_only в базе).
+     Пока он включён: нет переключателя заказчик/водитель, нет вкладок заказчика, регистрация сразу как водитель. */
+  var DO_KEY = 'adlcargo-drvonly', drvOnly = false;
+  try { drvOnly = localStorage.getItem(DO_KEY) === '1'; } catch (e) {}
+  if (drvOnly) uiMode = 'driver';
+  function loadDrvOnly() {
+    return rpc('is_drivers_only').then(function (v) {
+      var on = v === true;
+      if (on === drvOnly) return;
+      drvOnly = on;
+      try { localStorage.setItem(DO_KEY, on ? '1' : '0'); } catch (e) {}
+      if (on) uiMode = 'driver';
+      renderModeSw();
+      if (!$('v-reg').hidden) { if (on && reg.step === 'role') { reg.driver = true; reg.step = 'veh'; } renderReg(); }
+      else if (current) show(current);
+    }).catch(function () {});
+  }
 
   /* ---------- Theme (shared with the site, default Graphite + light) ---------- */
   var root = document.documentElement;
@@ -1376,7 +1393,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     if ($('v-reg').hidden) return;
     $('h-reg').textContent = t('reg_h');
     var body = $('regBody'); body.textContent = '';
-    if (reg.step === null) { var u = regUrlRole(); if (u === 'driver') { reg.driver = true; reg.step = 'veh'; } else reg.step = 'role'; }
+    if (reg.step === null) { var u = regUrlRole(); if (u === 'driver' || drvOnly) { reg.driver = true; reg.step = 'veh'; } else reg.step = 'role'; }
     var sub = $('regSub');
     if (reg.step === 'role') {
       sub.textContent = t('reg_sub_role');
@@ -1412,7 +1429,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
       nx.addEventListener('click', function () { if (!Object.keys(reg.sel).length) { err.textContent = t('reg_e_veh'); err.hidden = false; return; } reg.step = 'routes'; renderReg(); });
       p.appendChild(nx);
       var bk = el('button', 'btn sec block', t('reg_back')); bk.type = 'button'; bk.style.marginTop = '8px';
-      bk.addEventListener('click', function () { reg.step = 'role'; reg.driver = false; renderReg(); }); p.appendChild(bk);
+      bk.addEventListener('click', function () { reg.step = 'role'; reg.driver = false; renderReg(); }); if (!drvOnly) p.appendChild(bk);
       body.appendChild(p); return;
     }
     sub.textContent = t('reg_rt_h') + '. ' + t('reg_rt_s');
@@ -1514,6 +1531,8 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   };
   function renderModeSw() {
     var box = $('modeSw'); box.textContent = '';
+    if (drvOnly) { box.style.display = 'none'; return; }
+    if ($('v-reg').hidden) box.style.display = '';
     [['shipper', P.box, 'mode_ship'], ['driver', P.truck, 'mode_drv']].forEach(function (o) {
       var b = el('button'); b.type = 'button'; b.setAttribute('data-mode', o[0]); b.setAttribute('aria-pressed', String(uiMode === o[0]));
       b.setAttribute('aria-label', t(o[2])); b.title = t(o[2]); b.appendChild(icon(o[1], 22));
@@ -1537,6 +1556,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   }
   function setUiMode(m, announce) {
     if (m === uiMode) return;
+    if (drvOnly && m !== 'driver') return;
     function apply() {
       uiMode = m; uiSaved = true;
       try { localStorage.setItem(UI_KEY, m); } catch (e) {}
@@ -1551,6 +1571,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   }
   function show(name) {
     if (needReg()) { enterReg(); return; }
+    if (drvOnly && uiMode !== 'driver') uiMode = 'driver';
     if (!TABS[uiMode].some(function (tb) { return tb[0] === name; })) name = TABS[uiMode][0][0];
     current = name;
     ['feed', 'create', 'mine', 'fleet', 'profile'].forEach(function (n) { $('v-' + n).hidden = n !== name; });
@@ -1626,6 +1647,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
         meEarly.p.catch(function () {});
       }
       return Promise.all([
+        loadDrvOnly(),
         rest('profiles?select=full_name,phone,work_phone,onboarded_at,role,language,rating_avg,rating_count&id=eq.' + encodeURIComponent(session.user_id)).then(function (rows) { profile = rows[0] || { phone: null, role: 'shipper', language: 'ru' }; }),
         loadDriver()
       ]);
@@ -1643,6 +1665,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     }).catch(function () { toast(t('login_fail')); });
   } else {
     renderFeedModeBar();
+    loadDrvOnly();
   }
 })();
 </script>
