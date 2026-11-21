@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-GOHHsk3m9aGUWUfuAVuW6cb2lY6wUaaC7xBeTqv0icM='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; frame-src https://oauth.telegram.org; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-NDbZ6dXfclsYemieX79c3boNO+D0q32to736n3kaJk8='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; frame-src https://oauth.telegram.org; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; worker-src 'none'">
 <title>ADL Cargo · Админ-панель</title>
 <link rel="preload" href="/fonts/geologica-cyrillic-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/geologica-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -359,6 +359,21 @@ function notesBlock(type, id, items) {
 }
 
 // ---------- views ----------
+// "Add to home screen" for the admin Mini App (Telegram Bot API 8.0); shown only where Telegram supports it
+var homeSt = null;
+function adminHomeCard() {
+  var box = $('#homeCard');
+  var ok = false; try { ok = !!(TGAPP && tgv('8.0') && TGAPP.addToHomeScreen); } catch (e) {}
+  if (!box || !ok) return;
+  function fill(st) {
+    homeSt = st;
+    if (st === 'unsupported' || st === 'added') { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="card"><b>Админ-панель на главном экране</b><p class="mut" style="margin:6px 0 10px">Добавьте иконку на телефон и открывайте админку в одно касание, без поиска бота.</p>' +
+      '<button class="btn pri" data-do="addhome">Добавить на главный экран</button></div>';
+  }
+  if (homeSt) { fill(homeSt); return; }
+  try { TGAPP.checkHomeScreenStatus(function (st) { fill(st || 'unknown'); }); } catch (e) {}
+}
 async function vDash(main) {
   var all = await Promise.all([
     api('dashboard'),
@@ -367,7 +382,7 @@ async function vDash(main) {
   ]);
   var d = all[0], stale = all[1], ds = all[2];
   main.innerHTML =
-    '<div class="head"><h1>Обзор</h1></div><div class="grid">' +
+    '<div class="head"><h1>Обзор</h1></div><div id="homeCard"></div><div class="grid">' +
     '<a class="stat" href="#/users"><div class="n">' + d.users + '</div><div class="l">Пользователей · +' + d.users_7d + ' за 7 дней</div></a>' +
     (ds ? '<a class="stat" href="#/drivers"><div class="n">' + ds.drivers + '</div><div class="l">Водителей в базе · +' + ds.drivers_7d + ' за 7 дней</div></a>' : '') +
     '<a class="stat" href="#/users?blocked=1"><div class="n">' + d.users_blocked + '</div><div class="l">Заблокировано</div></a>' +
@@ -659,6 +674,7 @@ var H = {
     if (!(await ask('Снять бан с пользователя?', '<p class="mut">Пользователь снова сможет пользоваться сервисом.</p>', 'Снять бан'))) return;
     guard(function () { return act('users.unban', { user_id: t.dataset.id }); }, 'Бан снят');
   },
+  addhome: function () { try { TGAPP.addToHomeScreen(); } catch (e) {} },
   showstaff: function (t) { var b = $('#staffBox'); if (b) { b.hidden = !b.hidden; t.hidden = true; } },
   delreg: async function (t) {
     if (!(await ask('Удалить регистрацию?', '<p class="mut">Это не бан. Профиль удалится, и человек сможет снова нажать «Старт» в боте и зарегистрироваться с нуля. Подтверждение придёт в бота.</p>', 'Удалить'))) return;
@@ -793,6 +809,7 @@ async function route(quiet) {
   var lt = quiet ? 0 : setTimeout(function () { if (seq === RS && !pass.done) main.innerHTML = '<div class="mut pad">Загрузка…</div>'; }, 150);
   try {
     await VIEWS[name](main, parts[1], new URLSearchParams(parts0[1] || ''));
+    if (name === 'dashboard') adminHomeCard();
   } catch (e) {
     pass.hit = false;
     if (!S || seq !== RS) return;
@@ -958,6 +975,9 @@ async function bioRelock() {
   bioHiddenAt = 0; bioBusy = true;
   try { await bioGate(); } finally { bioBusy = false; }
 }
+try {
+  if (TGAPP && TGAPP.onEvent) TGAPP.onEvent('homeScreenAdded', function () { homeSt = 'added'; var b = $('#homeCard'); if (b) b.innerHTML = ''; toast('Админка добавлена на главный экран'); });
+} catch (e) {}
 function bioWatch() {
   if (!bioMgr()) return;
   function away() { if (!bioHiddenAt) bioHiddenAt = Date.now(); }
