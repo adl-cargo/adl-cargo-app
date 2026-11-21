@@ -2,7 +2,7 @@
 <html lang="ru" data-pal="graphite" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-FJv+xjWPl3yIoOfh1ZpkgpZBOxw24fZ9Y2E+Tj7C5G0='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-mmo0cjXCZfLQ8HLmKjzvHm+lBfXO2Bdd7E4pZK/Qofc='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ADL Cargo — приложение</title>
 <meta name="robots" content="noindex">
@@ -347,7 +347,16 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     pay_note: ['Объявление появится на доске сразу после оплаты.', 'E\u2019lon to\u2018lovdan so\u2018ng darhol doskada paydo bo\u2018ladi.'], pay_fail: ['Не удалось открыть оплату. Попробуйте ещё раз.', 'To\u2018lovni ochib bo\u2018lmadi. Qayta urinib ko\u2018ring.'],
     pay_after_h: ['Объявление создано', 'E\u2019lon yaratildi'],
     st_active: ['Активно до {0}', '{0} gacha faol'], st_deal: ['Договорились', 'Kelishildi'], st_closed: ['Снято', 'Olib tashlangan'], st_removed: ['Удалено', 'O\u2018chirilgan'], st_expired: ['Истекло', 'Muddati tugagan'],
-    created: ['Создано {0} · номер открыли: {1}', 'Yaratilgan {0} · raqamni ochishdi: {1}'], take_off: ['Снять с доски', 'Doskadan olib tashlash'],
+    created: ['Создано {0} · номер открыли: {1}', 'Yaratilgan {0} · raqamni ochishdi: {1}'],
+    repeat: ['Повторить', 'Takrorlash'],
+    repeat_toast: ['Форма заполнена данными объявления. Проверьте и опубликуйте.', 'Forma e\u2019lon ma\u2019lumotlari bilan to\u2018ldirildi. Tekshiring va joylang.'],
+    share: ['Поделиться', 'Ulashish'],
+    share_text: ['Груз: {0}. Смотрите в ADL Cargo', 'Yuk: {0}. ADL Cargo\u2019da ko\u2018ring'],
+    shared_gone: ['Это объявление уже снято или истекло.', 'Bu e\u2019lon allaqachon olib tashlangan yoki muddati tugagan.'],
+    home_h: ['ADL Cargo на главном экране', 'ADL Cargo bosh ekranda'],
+    home_t: ['Добавьте иконку на телефон и открывайте приложение в одно касание.', 'Telefoningizga belgini qo\u2018shing va ilovani bir teginishda oching.'],
+    home_btn: ['Добавить на главный экран', 'Bosh ekranga qo\u2018shish'],
+    home_added: ['Иконка добавлена на главный экран.', 'Belgi bosh ekranga qo\u2018shildi.'], take_off: ['Снять с доски', 'Doskadan olib tashlash'],
     mine_empty_h: ['Пока пусто', 'Hozircha bo\u2018sh'], mine_empty_t: ['Вы ещё не размещали объявления.', 'Siz hali e\u2019lon joylamagansiz.'], mine_empty_btn: ['Создать объявление', 'E\u2019lon yaratish'],
     close_h: ['Снять объявление', 'E\u2019lonni olib tashlash'], close_q: ['Что произошло с грузом?', 'Yukka nima bo\u2018ldi?'], c_deal: ['Договорились', 'Kelishdik'], c_not: ['Груз больше не нужен', 'Yuk endi kerak emas'], closed_toast: ['Объявление снято', 'E\u2019lon olib tashlandi'],
     look_h: ['Оформление', 'Ko\u2018rinish'], look_color: ['Цвет', 'Rang'], look_theme: ['Тема', 'Mavzu'], th_light: ['Светлая', 'Yorug\u2018'], th_dark: ['Тёмная', 'Qorong\u2018i'], th_auto: ['Как в Telegram', 'Telegram kabi'],
@@ -662,7 +671,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   function placeTypeLabel(code, id) { if (id === 13) return lang === 'uz' ? 'Shahar' : 'Город'; var x = ptypes[code]; return x ? (lang === 'uz' ? (x.name_uz || x.name_ru) : x.name_ru) : ''; }
 
   /* ---------- Listing pieces ---------- */
-  var LISTING_SELECT = 'id,author_id,description,weight_kg,price_amount,exclusive_vehicle,route_type,status,close_reason,created_at,expires_at,contact_count,' +
+  var LISTING_SELECT = 'id,author_id,from_place_id,to_place_id,description,weight_kg,price_amount,exclusive_vehicle,route_type,status,close_reason,created_at,expires_at,contact_count,' +
     'from:places!listings_from_place_id_fkey(name_ru,name_uz_latn),to:places!listings_to_place_id_fkey(name_ru,name_uz_latn),listing_vehicle_types(vehicle_type),listing_photos(path,position)';
   function routeText(l) { return l.route_type === 'intracity' ? pname(l.from) : pname(l.from) + ' → ' + pname(l.to); }
   function routeNode(l) {
@@ -871,6 +880,24 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
       var bk = el('button', 'btn sec block', t('back')); bk.type = 'button'; bk.addEventListener('click', function () { openDetail(l); }); body.appendChild(bk);
     });
   }
+  /* A link that opens this listing in the Mini App: t.me/<bot>?startapp=l<id> */
+  var BOT_NAME = 'adl_cargo_bot';
+  function shareListing(l) {
+    var link = 'https://t.me/' + BOT_NAME + '?startapp=l' + l.id;
+    var text = t('share_text', routeText(l));
+    var url = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text);
+    try { if (tg && tg.openTelegramLink) { tg.openTelegramLink(url); return; } } catch (e) {}
+    window.open(url, '_blank', 'noopener');
+  }
+  function openShared() {
+    var sp = inTg && tg.initDataUnsafe && tg.initDataUnsafe.start_param;
+    var m = /^l(\d{1,12})$/.exec(sp || '');
+    if (!m || openShared.done) return;
+    openShared.done = true;
+    rest('listings?select=' + LISTING_SELECT + '&id=eq.' + m[1]).then(function (rows) {
+      if (rows && rows[0] && rows[0].status === 'active') openDetail(rows[0]); else toast(t('shared_gone'));
+    }).catch(function () {});
+  }
   function openDetail(l) {
     openDlg(function (body) {
       var h = el('h3'); var r = routeNode(l); r.style.fontSize = '20px'; h.appendChild(r);
@@ -904,6 +931,11 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
         if (!inTg) slot.appendChild(el('div', 'hint', t('phone_after_login')));
       }
       body.appendChild(slot);
+      if (inTg) {
+        var sh = el('button', 'btn sec block', t('share')); sh.type = 'button'; sh.style.marginTop = '8px';
+        sh.addEventListener('click', function () { shareListing(l); });
+        body.appendChild(sh);
+      }
     });
   }
 
@@ -1207,8 +1239,24 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
         c.appendChild(pb);
       }
       if (st.on) { var b = el('button', 'btn sec sm', t('take_off')); b.type = 'button'; b.addEventListener('click', function () { askClose(l); }); c.appendChild(b); }
+      if (!st.on && !st.pending) { var rb = el('button', 'btn sec sm', t('repeat')); rb.type = 'button'; rb.addEventListener('click', function () { repeatListing(l); }); c.appendChild(rb); }
       body.appendChild(c);
     });
+  }
+  /* Fill the create form from an earlier listing (route, vehicles, weight, price, text); photos are added anew */
+  function repeatListing(l) {
+    form = newForm();
+    form.route = l.route_type === 'intracity' ? 'intracity' : 'intercity';
+    if (l.from_place_id && l.from) form.from = { id: l.from_place_id, name: pname(l.from) };
+    if (form.route === 'intercity' && l.to_place_id && l.to) form.to = { id: l.to_place_id, name: pname(l.to) };
+    (l.listing_vehicle_types || []).forEach(function (v) { form.codes[v.vehicle_type] = true; });
+    form.excl = !!l.exclusive_vehicle;
+    form.weight = l.weight_kg != null ? String(Number(l.weight_kg)) : '';
+    form.price = l.price_amount != null ? String(Number(l.price_amount)) : '';
+    form.desc = l.description || '';
+    show('create');
+    window.scrollTo(0, 0);
+    toast(t('repeat_toast'));
   }
   function payListing(l, btn) {
     if (btn.disabled) return; btn.disabled = true; var label = btn.textContent; btn.textContent = t('pay_opening');
@@ -1534,7 +1582,32 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     dl.appendChild(el('dt', null, t('p_phone'))); dl.appendChild(el('dd', null, profile.phone || '—'));
     if (profile.rating_count > 0) { dl.appendChild(el('dt', null, t('p_rating'))); dl.appendChild(el('dd', null, '★ ' + Number(profile.rating_avg).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) + ' (' + profile.rating_count + ')')); }
     card.appendChild(dl); body.appendChild(card);
+    homeCard(body);
   }
+  /* Offer an icon on the phone's home screen where Telegram supports it (Bot API 8.0) */
+  var homeStatus = null;
+  function homeCard(body) {
+    var ok = false; try { ok = tg && tg.isVersionAtLeast && tg.isVersionAtLeast('8.0') && tg.addToHomeScreen; } catch (e) {}
+    if (!ok) return;
+    var box = el('div', 'panel'); box.style.marginTop = '12px'; box.hidden = true; body.appendChild(box);
+    function fill(st) {
+      homeStatus = st;
+      if (st === 'unsupported' || st === 'added') { box.hidden = true; return; }
+      box.textContent = ''; box.hidden = false;
+      box.appendChild(el('b', null, t('home_h')));
+      box.appendChild(el('div', 'meta', t('home_t')));
+      var b = el('button', 'btn pri block', t('home_btn')); b.type = 'button'; b.style.marginTop = '10px';
+      b.addEventListener('click', function () { try { tg.addToHomeScreen(); } catch (e) {} });
+      box.appendChild(b);
+    }
+    if (homeStatus) { fill(homeStatus); return; }
+    try { tg.checkHomeScreenStatus(function (st) { fill(st || 'unknown'); }); } catch (e) {}
+  }
+  try {
+    if (inTg && tg.onEvent) tg.onEvent('homeScreenAdded', function () {
+      homeStatus = 'added'; toast(t('home_added')); if (current === 'profile') renderProfile();
+    });
+  } catch (e) {}
 
   /* ---------- Look dialog ---------- */
   function openLook() {
@@ -1703,6 +1776,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
       else show(current);
       if (fromCache && current === 'feed') loadFeed();   /* the cached feed on screen gets refreshed */
       if (current === 'feed' && feedMode === 'me') loadMe();
+      openShared();   /* opened from a shared listing link */
     }).catch(function () { toast(t('login_fail')); });
   } else {
     renderFeedModeBar();
