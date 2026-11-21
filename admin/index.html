@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-9K8FkpjCVkDFQO3ZttQSm4ao29UCIM3owBnkS/bZAuE='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; frame-src https://oauth.telegram.org; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-GOHHsk3m9aGUWUfuAVuW6cb2lY6wUaaC7xBeTqv0icM='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; frame-src https://oauth.telegram.org; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; worker-src 'none'">
 <title>ADL Cargo · Админ-панель</title>
 <link rel="preload" href="/fonts/geologica-cyrillic-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/geologica-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -132,15 +132,38 @@ html.tg .back{display:none}
 
 var SB = 'https://dwzdylyalwmfmjzhmmjy.supabase.co';
 var API = SB + '/functions/v1/admin-api';
+// Public (anon) key: used only to read the public vehicle type list; all admin data goes through admin-api
+var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3emR5bHlhbHdtZm1qemhtbWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNzQzNTEsImV4cCI6MjEwNjg1MDM1MX0.m9_66lkRBHiyYc0H4LVHi9GRpv4YQ60fLfi0SpWzUCE';
+var VT = {};
+function vt(code) { return VT[code] || code; }
+function loadVT() {
+  fetch(SB + '/rest/v1/vehicle_types?select=code,name_ru', { headers: { apikey: ANON } })
+    .then(function (r) { return r.ok ? r.json() : []; })
+    .then(function (rows) { (rows || []).forEach(function (x) { VT[x.code] = x.name_ru; }); if (rows && rows.length && S) route(true); })
+    .catch(function () {});
+}
 var BOT = 'adl_cargo_bot';
 var TGAPP = (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData) ? Telegram.WebApp : null;
 
 var LV = { support: 1, moderator: 2, admin: 3, owner: 4 };
 var RL = { owner: 'Владелец', admin: 'Админ', moderator: 'Модератор', support: 'Поддержка' };
 var PR = { shipper: 'Заказчик', driver: 'Водитель', both: 'Заказчик и водитель' };
+// What a person actually has (server: admin_user_overview). Everyone is a user; only drivers get a label.
+var KIND = {
+  unfinished: ['Регистрация не закончена', 'warn'],
+  driver: ['Водитель', 'ok'],
+  no_route: ['Водитель · нет маршрута', ''],
+  no_vehicle: ['Водитель · нет машины', ''],
+  driver_empty: ['Водитель · не заполнил', '']
+};
+function kindBadge(kind, hasUz) {
+  var k = KIND[kind]; if (!k) return '';
+  return badge(k[0] + (kind === 'unfinished' && hasUz === false ? ' · нет узб. номера' : ''), k[1]);
+}
 var LS = { active: ['Активно', 'ok'], closed: ['Закрыто', ''], expired: ['Истекло', ''], removed: ['Убрано', 'bad'] };
 var RR = { spam: 'Спам', fraud: 'Мошенничество', wrong_info: 'Неверные данные', inappropriate: 'Неприемлемое', other: 'Другое' };
 var ERR = {
+  not_deletable: 'Удалить нельзя: у человека уже есть номер, объявления, машины, маршруты или он сотрудник.',
   network: 'Нет связи с сервером',
   unauthorized: 'Сессия недействительна, войдите снова',
   session_revoked: 'Доступ отозван',
@@ -358,7 +381,7 @@ async function vDash(main) {
 
 function listingRow(l) {
   var rt = l.route_type === 'intracity' ? pn(l.from_place) + ' (по городу)' : pn(l.from_place) + ' → ' + pn(l.to_place);
-  var types = (l.listing_vehicle_types || []).map(function (x) { return x.vehicle_type; }).join(', ');
+  var types = (l.listing_vehicle_types || []).map(function (x) { return vt(x.vehicle_type); }).join(', ');
   var st = LS[l.status] || [l.status, ''];
   return '<a class="row" href="#/listings/' + l.id + '"><div class="rmain"><b>#' + l.id + ' ' + esc(rt) + '</b><div class="rmeta">' +
     esc(types) + (l.weight_kg ? ' · ' + Number(l.weight_kg).toLocaleString('ru-RU') + ' кг' : '') + ' · ' + esc(money(l.price_amount)) +
@@ -368,28 +391,81 @@ function listingRow(l) {
 
 async function vUsers(main, id, qs) {
   if (id) return vUser(main, id);
-  var q = qs.get('q') || '', blocked = qs.get('blocked') === '1';
-  var res = await api('users.list', { q: q, blocked: blocked || undefined, page: +qs.get('page') || 1 });
+  var q = qs.get('q') || '', f = qs.get('f') || '';
+  var prm = { q: q, page: +qs.get('page') || 1 };
+  if (f === 'blocked') prm.blocked = true; else if (f) prm.kind = f;
+  var res = await api('users.list', prm);
   main.innerHTML = '<div class="head"><h1>Пользователи</h1></div>' +
     searchBar('q', q, can(2) ? 'Имя, @username, телефон или Telegram ID' : 'Имя, @username или Telegram ID') +
-    tabs([['', 'Все'], ['1', 'Заблокированные']], blocked ? '1' : '', 'blocked') +
+    tabs([['', 'Все'], ['driver', 'Водители'], ['partial', 'Водитель не заполнил'], ['unfinished', 'Регистрация не закончена'], ['blocked', 'Заблокированные']], f, 'f') +
     (res.items.length ? res.items.map(function (u) {
       return '<a class="row" href="#/users/' + u.id + '"><div class="rmain"><b>' + esc(u.full_name || 'Без имени') + '</b> <span class="mut">' + (u.telegram_username ? '@' + esc(u.telegram_username) : '') + '</span>' +
-        '<div class="rmeta">' + esc(u.phone || 'нет телефона') + ' · ' + esc(PR[u.role] || u.role) + ' · ' + dt(u.created_at) + '</div></div><div class="rside">' +
-        (u.is_blocked ? badge('Заблокирован', 'bad') : '') + (u.rating_count ? badge('★ ' + u.rating_avg + ' (' + u.rating_count + ')') : '') + '</div></a>';
+        '<div class="rmeta">' + esc(u.phone || 'нет телефона') + ' · ' + dt(u.created_at) + '</div></div><div class="rside">' +
+        kindBadge(u.kind, u.has_uz_phone) + (u.is_blocked ? ' ' + badge('Заблокирован', 'bad') : '') + (u.rating_count ? badge('★ ' + u.rating_avg + ' (' + u.rating_count + ')') : '') + '</div></a>';
     }).join('') : empty('Никого не нашли')) + pager(res, qs);
 }
 
+function routeLine(rt) {
+  var pts = (rt.driver_route_points || []).map(function (x) { return x.place ? x.place.name_ru : '?'; });
+  if (rt.any_destination && pts.length) return pts[0] + ' → куда угодно';
+  if (pts.length === 1) return pts[0] + ': внутри';
+  return pts.join(rt.both_ways ? ' ⇄ ' : ' → ');
+}
+function driverCards(r, p) {
+  var ov = r.overview || {}, h = '';
+  var isDrv = r.vehicles.length || (r.routes || []).length || /^(driver|no_route|no_vehicle|driver_empty)$/.test(ov.kind || '');
+  if (isDrv) {
+    h += '<div class="card"><h2>Машины (' + r.vehicles.length + ')</h2>' + (r.vehicles.length ? r.vehicles.map(function (v) {
+      return '<div class="rmeta" style="margin-top:8px"><b style="color:var(--tx)">' + esc(vt(v.vehicle_type)) + '</b>' +
+        ' · ' + (v.plate_number ? esc(v.plate_number) : 'без госномера') + (v.brand ? ' · ' + esc(v.brand) : '') +
+        (v.capacity_kg ? ' · до ' + Number(v.capacity_kg).toLocaleString('ru-RU') + ' кг' : '') +
+        (v.company_name ? ' · ' + esc(v.company_name) : '') + (v.is_primary ? ' · основная' : '') + '</div>';
+    }).join('') : '<p class="mut">Машину не добавил</p>') + '</div>';
+    var rts = r.routes || [];
+    h += '<div class="card"><h2>Маршруты (' + rts.length + ')</h2>' + (rts.length ? rts.map(function (rt) {
+      return '<div class="row" style="cursor:default"><div class="rmain"><b>' + esc(routeLine(rt)) + '</b>' + (rt.name ? ' <span class="mut">' + esc(rt.name) + '</span>' : '') +
+        '<div class="rmeta">с ' + dt(rt.created_at) + '</div></div><div class="rside">' + (rt.is_active ? badge('включён', 'ok') : badge('выключен')) + '</div></div>';
+    }).join('') : '<p class="mut">Маршрут не добавил</p>') + '</div>';
+    var paused = p.notify_paused_until && new Date(p.notify_paused_until) > new Date();
+    h += '<div class="card"><h2>Уведомления о грузах</h2><dl class="kv"><dt>За 7 дней</dt><dd>' + (r.notifications_7d || 0) + '</dd>' +
+      '<dt>Пауза</dt><dd>' + (paused ? 'до ' + dt(p.notify_paused_until) : 'нет') + '</dd></dl></div>';
+  }
+  var cv = r.contact_views || { total: 0, last24h: 0, recent: [] };
+  h += '<div class="card"><h2>Открытые номера</h2><dl class="kv"><dt>Всего</dt><dd>' + cv.total + '</dd><dt>За сутки</dt><dd>' + cv.last24h +
+    (cv.limit != null && Number(cv.limit) > 0 ? ' из ' + esc(cv.limit) : '') + '</dd></dl>' +
+    (cv.recent && cv.recent.length ? '<div class="rmeta" style="margin-top:8px">Последние: ' + cv.recent.map(function (x) {
+      return '<a href="#/listings/' + x.listing_id + '">#' + x.listing_id + '</a> <span class="mut">' + dt(x.viewed_at) + '</span>';
+    }).join(' · ') + '</div>' : '') + '</div>';
+  return h;
+}
+// Staff controls: shown as a status line for staff; for everyone else only a quiet "make staff…" button (owner only)
+function staffCard(p, staff) {
+  if (!can(4) && !staff) return '';
+  var sel = '<select class="inp" id="roleSel">' + ['support', 'moderator', 'admin', 'owner'].map(function (k) {
+    return '<option value="' + k + '"' + (staff && staff.role === k ? ' selected' : (!staff && k === 'support' ? ' selected' : '')) + '>' + RL[k] + '</option>';
+  }).join('') + '</select>';
+  if (staff) {
+    return '<div class="card"><h2>Сотрудник: ' + esc(RL[staff.role] || staff.role) + ' · ' + (staff.is_active ? 'активен' : 'отключён') + '</h2>' +
+      (can(4) ? '<p class="mut">Смена роли подтверждается кнопкой в боте.</p><div class="bar">' + sel +
+        '<button class="btn pri" data-do="setrole" data-id="' + p.id + '">Сменить роль</button>' +
+        '<button class="btn danger" data-do="staffactive" data-id="' + p.id + '" data-v="' + (staff.is_active ? '0' : '1') + '">' + (staff.is_active ? 'Отключить доступ' : 'Включить доступ') + '</button></div>' : '') + '</div>';
+  }
+  return '<div style="margin:4px 0 16px"><button class="btn sm" data-do="showstaff">Сделать сотрудником…</button>' +
+    '<div class="card" id="staffBox" hidden><h2>Назначить сотрудником</h2><p class="mut">Человек получит доступ к админ-панели. Назначение подтверждается кнопкой в боте.</p><div class="bar">' + sel +
+    '<button class="btn pri" data-do="setrole" data-id="' + p.id + '">Назначить</button></div></div></div>';
+}
 async function vUser(main, id) {
   var r = await api('users.get', { id: id });
   var p = r.profile;
   var staff = r.staff;
-  var banInfo = p.is_blocked ? badge('Заблокирован' + (p.banned_until ? ' до ' + dt(p.banned_until) : ' навсегда'), 'bad') : badge('Активен', 'ok');
+  var ov = r.overview || {};
+  var banInfo = (p.is_blocked ? badge('Заблокирован' + (p.banned_until ? ' до ' + dt(p.banned_until) : ' навсегда'), 'bad') : badge('Активен', 'ok')) +
+    (ov.kind ? ' ' + kindBadge(ov.kind, ov.has_uz_phone) : '');
   var h = '<a class="back" href="#/users">← Пользователи</a><div class="head"><h1>' + esc(p.full_name || 'Без имени') + '</h1><div>' + banInfo + (staff ? ' ' + badge(RL[staff.role] + (staff.is_active ? '' : ' (отключён)'), 'warn') : '') + '</div></div>';
   h += '<div class="card"><dl class="kv">' +
     '<dt>Telegram</dt><dd>' + (p.telegram_username ? '@' + esc(p.telegram_username) : '—') + ' · ID <code>' + esc(p.telegram_id) + '</code></dd>' +
     '<dt>Телефон</dt><dd>' + esc(p.phone || '—') + '</dd>' +
-    '<dt>Роль в сервисе</dt><dd>' + esc(PR[p.role] || p.role) + '</dd>' +
+    (p.work_phone ? '<dt>Рабочий номер</dt><dd>' + esc(p.work_phone) + '</dd>' : '') +
     '<dt>Язык</dt><dd>' + esc(p.language) + '</dd>' +
     '<dt>Рейтинг</dt><dd>' + (p.rating_count ? '★ ' + p.rating_avg + ' (' + p.rating_count + ')' : 'нет оценок') + '</dd>' +
     '<dt>Регистрация</dt><dd>' + dt(p.created_at) + '</dd>' +
@@ -400,15 +476,15 @@ async function vUser(main, id) {
     // a permanent ban (banned_until is null) can be lifted only by admin+ with a bot confirmation
     h += '<div class="actions">' + (p.is_blocked
       ? (p.banned_until || can(3) ? '<button class="btn pri" data-do="unban" data-id="' + p.id + '">' + (p.banned_until ? 'Разбанить' : 'Снять постоянный бан (подтверждение в боте)') + '</button>' : '<span class="mut">Постоянный бан снимает админ</span>')
-      : '<button class="btn danger" data-do="ban" data-id="' + p.id + '">Забанить</button>') + '</div>';
+      : '<button class="btn danger" data-do="ban" data-id="' + p.id + '">Забанить</button>') +
+      (can(3) && ov.kind === 'unfinished' && ov.has_uz_phone === false && !ov.listings && !ov.views && !ov.vehicles && !ov.routes && !ov.is_staff
+        ? '<button class="btn" data-do="delreg" data-id="' + p.id + '">Удалить регистрацию</button>' : '') + '</div>';
+    if (ov.kind === 'unfinished') h += '<p class="mut" style="margin-top:10px">' + (ov.has_uz_phone === false
+      ? 'Нет узбекского номера: человек не дошёл до этого шага в боте. Удаление не бан: он сможет нажать «Старт» и зарегистрироваться заново.'
+      : 'Номер есть, но регистрацию в боте человек не закончил.') + '</p>';
   }
   h += '</div>';
-  if (can(4)) {
-    h += '<div class="card"><h2>Сотрудник</h2><p class="mut">Смена роли подтверждается кнопкой в боте.</p><div class="bar"><select class="inp" id="roleSel">' +
-      ['support', 'moderator', 'admin', 'owner'].map(function (k) { return '<option value="' + k + '"' + (staff && staff.role === k ? ' selected' : (!staff && k === 'moderator' ? ' selected' : '')) + '>' + RL[k] + '</option>'; }).join('') +
-      '</select><button class="btn pri" data-do="setrole" data-id="' + p.id + '">' + (staff ? 'Сменить роль' : 'Назначить') + '</button>' +
-      (staff ? '<button class="btn danger" data-do="staffactive" data-id="' + p.id + '" data-v="' + (staff.is_active ? '0' : '1') + '">' + (staff.is_active ? 'Отключить доступ' : 'Включить доступ') + '</button>' : '') + '</div></div>';
-  }
+  h += driverCards(r, p);
   h += '<div class="card"><h2>Объявления (' + r.listings.length + ')</h2>' + (r.listings.length ? r.listings.map(function (l) {
     var st = LS[l.status] || [l.status, ''];
     return '<a class="row" href="#/listings/' + l.id + '"><div class="rmain"><b>#' + l.id + '</b> <span class="mut">' + dt(l.created_at) + ' · звонков: ' + l.contact_count + '</span></div><div class="rside">' + badge(st[0], st[1]) + '</div></a>';
@@ -416,11 +492,7 @@ async function vUser(main, id) {
   h += '<div class="card"><h2>Жалобы на пользователя (' + r.reports_against.length + ')</h2>' + (r.reports_against.length ? r.reports_against.map(function (x) {
     return '<div class="rmeta" style="margin-top:8px"><b style="color:var(--tx)">' + esc(RR[x.reason] || x.reason) + '</b> · ' + dt(x.created_at) + ' · ' + esc(x.status) + (x.details ? '<div class="pre">' + esc(x.details) + '</div>' : '') + '</div>';
   }).join('') : '<p class="mut">Нет</p>') + '</div>';
-  if (r.vehicles.length) {
-    h += '<div class="card"><h2>Транспорт</h2>' + r.vehicles.map(function (v) {
-      return '<div class="rmeta" style="margin-top:8px"><b style="color:var(--tx)">' + esc(v.plate_number) + '</b> · ' + esc(v.vehicle_type) + (v.brand ? ' · ' + esc(v.brand) : '') + (v.company_name ? ' · ' + esc(v.company_name) : '') + (v.is_primary ? ' · основной' : '') + '</div>';
-    }).join('') + '</div>';
-  }
+  h += staffCard(p, staff);
   h += notesBlock('user', p.id, r.notes);
   main.innerHTML = h;
 }
@@ -446,7 +518,7 @@ async function vListing(main, id) {
   h += '<div class="card"><dl class="kv">' +
     '<dt>Автор</dt><dd>' + (l.author ? '<a href="#/users/' + l.author.id + '">' + esc(uname(l.author)) + '</a>' + (l.author.is_blocked ? ' ' + badge('Заблокирован', 'bad') : '') + '<br><span class="mut">' + esc(l.author.phone || '') + '</span>' : '—') + '</dd>' +
     (r.extra_phones && r.extra_phones.length ? '<dt>Доп. номера</dt><dd>' + r.extra_phones.map(function (x) { return esc(x.phone); }).join('<br>') + '</dd>' : '') +
-    '<dt>Машины</dt><dd>' + esc((l.listing_vehicle_types || []).map(function (x) { return x.vehicle_type; }).join(', ')) + (l.exclusive_vehicle ? ' · вся машина' : '') + '</dd>' +
+    '<dt>Машины</dt><dd>' + esc((l.listing_vehicle_types || []).map(function (x) { return vt(x.vehicle_type); }).join(', ')) + (l.exclusive_vehicle ? ' · вся машина' : '') + '</dd>' +
     '<dt>Вес</dt><dd>' + (l.weight_kg ? Number(l.weight_kg).toLocaleString('ru-RU') + ' кг' : '—') + '</dd>' +
     '<dt>Цена</dt><dd>' + esc(money(l.price_amount)) + '</dd>' +
     '<dt>Описание</dt><dd class="pre">' + esc(l.description || '—') + '</dd>' +
@@ -512,7 +584,7 @@ async function vRatings(main, id, qs) {
 async function vAudit(main, id, qs) {
   var a = qs.get('action') || '';
   var p = { page: +qs.get('page') || 1 };
-  if (a) p.action = a;
+  if (a) p.act = a;
   var both = await Promise.all([api('audit.list', p), api('staff.list')]);
   var res = both[0], names = {};
   both[1].items.forEach(function (s) { names[s.user_id] = uname(s.profile); });
@@ -536,12 +608,24 @@ async function vStaff(main) {
     }).join('') : empty('Сотрудников нет'));
 }
 
+var SET_LABELS = {
+  contact_daily_limit: ['Лимит открытий телефонов в сутки', 'Сколько новых номеров один пользователь может открыть за 24 часа. Повторно открыть уже открытый номер можно всегда. 0 — без лимита.'],
+  drivers_only: ['Режим «только водители»', 'Временный режим Mini App для набора водителей. true — включён, false — выключен.'],
+  listing_fee_uzs: ['Цена объявления, сум', 'Сколько платит заказчик за одно объявление. 0 — бесплатно.'],
+  listing_ttl_days: ['Срок жизни объявления, дней', 'Через сколько дней объявление снимается само, если его не закрыли.'],
+  max_active_listings_per_user: ['Активных объявлений на человека', 'Сколько активных объявлений может быть одновременно у одного пользователя.'],
+  no_call_refund_minutes: ['Возврат при отсутствии звонков, минут', 'Через сколько минут без звонков возвращаем плату за объявление.'],
+  payment_beta_user_ids: ['Тестовая оплата: кто платит', 'Если список не пустой, платят только эти пользователи (проверка оплаты). Пустой список [] — платят все, когда цена больше 0.'],
+  top_boost_price_uzs: ['Цена «Топ», сум', 'Пока не используется.'],
+  vip_boost_price_uzs: ['Цена «VIP», сум', 'Пока не используется.']
+};
 async function vSettings(main) {
   var res = await api('settings.list');
   main.innerHTML = '<div class="head"><h1>Настройки</h1></div>' +
     (can(4) ? '<div class="card mut">Изменение настройки подтверждается кнопкой в боте.</div>' : '') +
     res.items.map(function (s) {
-      return '<div class="row"><div class="rmain"><b>' + esc(s.key) + '</b><div class="rmeta">' + esc(s.description || '') + '</div><div style="margin-top:6px"><code>' + esc(JSON.stringify(s.value)) + '</code></div></div><div class="rside">' +
+      var lb = SET_LABELS[s.key];
+      return '<div class="row"><div class="rmain"><b>' + esc(lb ? lb[0] : s.key) + '</b> <span class="mut" style="font-size:12px">' + esc(s.key) + '</span><div class="rmeta">' + esc(lb ? lb[1] : (s.description || '')) + '</div><div style="margin-top:6px"><code>' + esc(JSON.stringify(s.value)) + '</code></div></div><div class="rside">' +
         (can(4) ? '<button class="btn sm" data-do="sedit" data-key="' + esc(s.key) + '" data-val="' + esc(JSON.stringify(s.value)) + '">Изменить</button>' : '') + '</div></div>';
     }).join('');
 }
@@ -574,6 +658,12 @@ var H = {
   unban: async function (t) {
     if (!(await ask('Снять бан с пользователя?', '<p class="mut">Пользователь снова сможет пользоваться сервисом.</p>', 'Снять бан'))) return;
     guard(function () { return act('users.unban', { user_id: t.dataset.id }); }, 'Бан снят');
+  },
+  showstaff: function (t) { var b = $('#staffBox'); if (b) { b.hidden = !b.hidden; t.hidden = true; } },
+  delreg: async function (t) {
+    if (!(await ask('Удалить регистрацию?', '<p class="mut">Это не бан. Профиль удалится, и человек сможет снова нажать «Старт» в боте и зарегистрироваться с нуля. Подтверждение придёт в бота.</p>', 'Удалить'))) return;
+    try { await act('users.delete_unfinished', { user_id: t.dataset.id }); CACHE = {}; toast('Регистрация удалена'); location.hash = '#/users'; }
+    catch (e) { if (e.message === 'Отменено') return; toast(errText(e), true); }
   },
   setrole: function (t) { var role = $('#roleSel').value; guard(function () { return act('staff.set_role', { user_id: t.dataset.id, role: role }); }, 'Роль изменена'); },
   staffrole: function (t) { var role = $('#role-' + t.dataset.id).value; guard(function () { return act('staff.set_role', { user_id: t.dataset.id, role: role }); }, 'Роль изменена'); },
@@ -635,10 +725,11 @@ async function vDrivers(main) {
   function list(items, key) { return items.length ? '<table class="tbl"><tbody>' + items.map(function (x) { return '<tr><td>' + esc(x[key]) + '</td><td class="num">' + x.drivers + '</td></tr>'; }).join('') + '</tbody></table>' : '<p class="mut">Пока пусто</p>'; }
   main.innerHTML =
     '<div class="head"><h1>Водители</h1></div><div class="grid">' +
-    st(d.drivers, 'Водителей в базе · +' + d.drivers_7d + ' за 7 дней') +
+    st(d.drivers, 'Водителей с машиной и маршрутом · +' + d.drivers_7d + ' за 7 дней') +
     st(d.drivers_24h, 'Новых водителей за сутки') +
-    st(d.shippers, 'Заказчиков') +
-    st(d.not_onboarded, 'Не закончили регистрацию') +
+    st(d.drivers_partial != null ? d.drivers_partial : 0, 'Водитель не заполнил (нет машины или маршрута)') +
+    st(d.posted != null ? d.posted : 0, 'Разместили хотя бы один груз') +
+    st(d.unfinished != null ? d.unfinished : d.not_onboarded, 'Регистрация не закончена') +
     st(d.notified_24h, 'Уведомлений водителям за сутки') +
     st(d.paused, 'Уведомления на паузе') + '</div>' +
     '<div class="card"><h2>Направления</h2>' +
@@ -648,7 +739,7 @@ async function vDrivers(main) {
         '</tbody></table></div>'
       : '<p class="mut">Пока нет водителей с направлениями</p>') + '</div>' +
     '<div class="grid2"><div class="card"><h2>По типам машин</h2>' + list(d.by_type, 'type') + '</div>' +
-    '<div class="card"><h2>По регионам</h2>' + list(d.by_region, 'region') + '</div></div>';
+    '<div class="card"><h2>По пунктам маршрутов</h2>' + list(d.by_region, 'region') + '</div></div>';
 }
 
 function renderShell() {
@@ -736,6 +827,7 @@ function logout(msg) {
 
 function startApp() {
   renderShell();
+  if (!Object.keys(VT).length) loadVT();
   stopTimers();
   lastAct = Date.now();
   timers.push(setInterval(async function () {
