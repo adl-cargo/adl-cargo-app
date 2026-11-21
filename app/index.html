@@ -2,7 +2,7 @@
 <html lang="ru" data-pal="graphite" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-CO9cv7dkt9z5qW7dbnictTDbLDsdPAuj8VU7mPBmQMI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-FJv+xjWPl3yIoOfh1ZpkgpZBOxw24fZ9Y2E+Tj7C5G0='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ADL Cargo — приложение</title>
 <meta name="robots" content="noindex">
@@ -332,6 +332,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     f_limit: ['Достигнут лимит активных объявлений. Снимите одно из старых.', 'Faol e\u2019lonlar limitiga yetdingiz. Eskilaridan birini olib tashlang.'],
     f_balance: ['Для публикации нужна оплата. Пополнение скоро появится.', 'E\u2019lon joylash uchun to\u2018lov kerak. Hisobni to\u2018ldirish tez orada qo\u2018shiladi.'],
     f_blocked: ['Аккаунт заблокирован. Напишите в поддержку.', 'Akkaunt bloklangan. Qo\u2018llab-quvvatlashga yozing.'],
+    f_climit: ['Вы открыли много номеров за сутки. Попробуйте завтра или напишите в поддержку.', 'Bir kunda juda ko\u2018p raqam ochdingiz. Ertaga qayta urinib ko\u2018ring yoki qo\u2018llab-quvvatlashga yozing.'],
     f_nophone: ['У автора нет номера телефона.', 'Muallifning telefon raqami yo\u2018q.'], f_unavail: ['Объявление уже снято с доски.', 'E\u2019lon allaqachon doskadan olib tashlangan.'],
     f_net: ['Нет связи с сервером. Проверьте интернет и повторите.', 'Server bilan aloqa yo\u2018q. Internetni tekshirib, qayta urinib ko\u2018ring.'],
     f_generic: ['Не получилось: {0}', 'Bajarilmadi: {0}'],
@@ -416,6 +417,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     if (/Too many active listings/i.test(msg)) return t('f_limit');
     if (/Insufficient balance/i.test(msg)) return t('f_balance');
     if (/Account blocked/i.test(msg)) return t('f_blocked');
+    if (/Daily contact limit/i.test(msg)) return t('f_climit');
     if (/Author has no phone/i.test(msg)) return t('f_nophone');
     if (/Uzbek phone required/i.test(msg)) return t('phone_t');
     if (/Listing not available/i.test(msg)) return t('f_unavail');
@@ -519,7 +521,43 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     return s && s.uid === TGUID && s.session && s.session.access_token ? s.session : null;
   }
   function fresh(s) { return !!(s && jwtExp(s.access_token) - Date.now() / 1000 > 120); }
-  function keepSession(s) { session = s; if (TGUID) lsSet('adlcargo-sess', { uid: TGUID, session: s }); return s; }
+  /* The long-lived refresh token goes to Telegram's secure storage (iOS Keychain / Android Keystore)
+     when this Telegram version has it; only the short-lived sign-in token stays in ordinary storage.
+     Older Telegram versions keep both in ordinary storage, as before. */
+  var SECURE = null;
+  try { if (inTg && tg.isVersionAtLeast && tg.isVersionAtLeast('9.0') && tg.SecureStorage) SECURE = tg.SecureStorage; } catch (e) {}
+  var RT_KEY = 'adlcargo_rt';
+  function secureSet(v) {
+    return new Promise(function (res) {
+      if (!SECURE) return res(false);
+      setTimeout(function () { res(false); }, 2500);
+      try { SECURE.setItem(RT_KEY, v, function (err, ok) { res(!err && ok !== false); }); } catch (e) { res(false); }
+    });
+  }
+  function secureGet() {
+    return new Promise(function (res) {
+      if (!SECURE) return res(null);
+      setTimeout(function () { res(null); }, 2500);
+      try { SECURE.getItem(RT_KEY, function (err, v) { res(err ? null : (v || null)); }); } catch (e) { res(null); }
+    });
+  }
+  function keepSession(s) {
+    session = s;
+    if (!TGUID) return s;
+    var base = { access_token: s.access_token, user_id: s.user_id };
+    if (!SECURE || !s.refresh_token) { base.refresh_token = s.refresh_token; lsSet('adlcargo-sess', { uid: TGUID, session: base }); return s; }
+    lsSet('adlcargo-sess', { uid: TGUID, session: base });
+    secureSet(s.refresh_token).then(function (ok) {
+      base[ok ? 'secure' : 'refresh_token'] = ok ? true : s.refresh_token;   /* no secure storage on this phone: keep it as before */
+      lsSet('adlcargo-sess', { uid: TGUID, session: base });
+    });
+    return s;
+  }
+  function refreshTokenOf(s) {
+    if (!s) return Promise.resolve(null);
+    if (s.refresh_token) return Promise.resolve(s.refresh_token);
+    return s.secure ? secureGet() : Promise.resolve(null);
+  }
   function refreshSession(s) {
     return fetch(SB + '/auth/v1/token?grant_type=refresh_token', {
       method: 'POST', headers: { 'Content-Type': 'application/json', apikey: KEY }, body: JSON.stringify({ refresh_token: s.refresh_token })
@@ -548,7 +586,10 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
   function login() {
     if (loginP) return loginP;
     var s = session;
-    var p = s && s.refresh_token ? refreshSession(s).catch(function () { return loginNow(); }) : loginNow();
+    var p = refreshTokenOf(s).then(function (rt) {
+      if (!rt) return loginNow();
+      return refreshSession({ refresh_token: rt, user_id: s.user_id }).catch(function () { return loginNow(); });
+    });
     loginP = p.then(function (x) { loginP = null; return x; }, function (e) { loginP = null; throw e; });
     return loginP;
   }
