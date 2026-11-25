@@ -4,26 +4,53 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-psGrmG46g86KI5FYJEXBJXoQZtcofbC5UlyP49ymdIg='; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-6sW1qQA7WaP1sLezhrXxpEM5F6jqJWoQQZNqZguCTNw='; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <title>ADL Cargo — звонок</title>
 <style>
 body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:-apple-system,system-ui,sans-serif;background:#f3f1ed;color:#1c1b19;padding:24px;text-align:center}
 a.call{display:block;width:100%;max-width:340px;padding:16px;border-radius:14px;background:#1c1b19;color:#fff;font-size:18px;font-weight:600;text-decoration:none}
 p{margin:0;color:#6b665e;font-size:14px}
+.card{width:100%;max-width:340px;box-sizing:border-box;text-align:left;background:#fff;border:1px solid #e1ddd5;border-radius:14px;padding:14px 16px}
+.lab{font-size:12px;color:#8a847a;margin-bottom:4px}
+.route{font-size:18px;font-weight:700}
+.meta{margin-top:4px;font-size:15px;color:#1c1b19}
+.desc{margin-top:8px;font-size:14px;color:#6b665e;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
+<div id="card" class="card" style="display:none">
+<div id="cLabel" class="lab"></div>
+<div id="cRoute" class="route"></div>
+<div id="cMeta" class="meta"></div>
+<div id="cDesc" class="desc"></div>
+</div>
 <p id="hint">Номер набирается…</p>
 <a class="call" id="callBtn" href="#">Позвонить</a>
-<p>После звонка вернитесь в Telegram.</p>
+<p id="back">После звонка вернитесь в Telegram.</p>
 <script>
 (function () {
-  var raw = decodeURIComponent((location.hash || '').slice(1));
-  var num = raw.replace(/[^\d+]/g, '');
+  var q = {};
+  (location.hash || '').slice(1).split('&').forEach(function (kv) {
+    var i = kv.indexOf('='); if (i < 1) return;
+    try { q[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); } catch (e) { /* skip a broken part */ }
+  });
+  var uz = q.l === 'uz';
+  var num = String(q.n || '').replace(/[^\d+]/g, '');
   var btn = document.getElementById('callBtn');
-  if (!/^\+?\d{9,15}$/.test(num)) { document.getElementById('hint').textContent = 'Номер не найден. Вернитесь в Telegram.'; btn.style.display = 'none'; return; }
+  var hint = document.getElementById('hint');
+  if (!/^\+?\d{9,15}$/.test(num)) { hint.textContent = uz ? 'Raqam topilmadi. Telegramga qayting.' : 'Номер не найден. Вернитесь в Telegram.'; btn.style.display = 'none'; return; }
+  hint.textContent = uz ? 'Qo\u2018ng\u2018iroq qilinmoqda\u2026' : 'Номер набирается…';
+  document.getElementById('back').textContent = uz ? 'Qo\u2018ng\u2018iroqdan keyin Telegramga qayting.' : 'После звонка вернитесь в Telegram.';
+  /* the listing this number belongs to */
+  var card = document.getElementById('card');
+  var parts = [];
+  if (q.r) { var rt = document.getElementById('cRoute'); rt.textContent = q.r; parts.push(1); }
+  var meta = [q.w, q.p].filter(Boolean).join(' · ');
+  if (meta) { document.getElementById('cMeta').textContent = meta; parts.push(1); }
+  if (q.d) { document.getElementById('cDesc').textContent = q.d; parts.push(1); }
+  if (parts.length) { document.getElementById('cLabel').textContent = uz ? 'E\u2019lon' : 'Объявление'; card.style.display = 'block'; }
   btn.href = 'tel:' + num;
-  btn.textContent = 'Позвонить ' + num;
+  btn.textContent = (uz ? 'Qo\u2018ng\u2018iroq qilish ' : 'Позвонить ') + num;
   setTimeout(function () { location.href = 'tel:' + num; }, 300);
 })();
 </script>
