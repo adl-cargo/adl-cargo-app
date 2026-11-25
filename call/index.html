@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-psGrmG46g86KI5FYJEXBJXoQZtcofbC5UlyP49ymdIg='; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>ADL Cargo — звонок</title>
+<style>
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:-apple-system,system-ui,sans-serif;background:#f3f1ed;color:#1c1b19;padding:24px;text-align:center}
+a.call{display:block;width:100%;max-width:340px;padding:16px;border-radius:14px;background:#1c1b19;color:#fff;font-size:18px;font-weight:600;text-decoration:none}
+p{margin:0;color:#6b665e;font-size:14px}
+</style>
+</head>
+<body>
+<p id="hint">Номер набирается…</p>
+<a class="call" id="callBtn" href="#">Позвонить</a>
+<p>После звонка вернитесь в Telegram.</p>
+<script>
+(function () {
+  var raw = decodeURIComponent((location.hash || '').slice(1));
+  var num = raw.replace(/[^\d+]/g, '');
+  var btn = document.getElementById('callBtn');
+  if (!/^\+?\d{9,15}$/.test(num)) { document.getElementById('hint').textContent = 'Номер не найден. Вернитесь в Telegram.'; btn.style.display = 'none'; return; }
+  btn.href = 'tel:' + num;
+  btn.textContent = 'Позвонить ' + num;
+  setTimeout(function () { location.href = 'tel:' + num; }, 300);
+})();
+</script>
+</body>
+</html>

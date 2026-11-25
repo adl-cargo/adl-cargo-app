@@ -2,7 +2,7 @@
 <html lang="ru" data-pal="graphite" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-65+6q7WxInTrdA5+DbQlQ/9D8ikPGRAswjiPomNkW4s='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-VD4Z0OGaCFACiypDQAzyOUyMP709wKWWEzkR6/SBC5c='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ADL Cargo — приложение</title>
 <meta name="robots" content="noindex">
@@ -956,6 +956,9 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     parent.appendChild(p);
   }
   function dialNumber(num) {
+    /* iOS Telegram blocks tel: inside the Mini App: hand the number to the system browser, whose page dials it */
+    var isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    if (isIos && tg && tg.openLink) { try { tg.openLink('https://adlcargo.uz/call/#' + encodeURIComponent(num), { try_browser: 'safari' }); return; } catch (e) { /* fall back below */ } }
     try { window.open('tel:' + num, '_self'); } catch (e) { try { window.location.href = 'tel:' + num; } catch (e2) { /* the copy button stays */ } }
   }
   function copyNumber(phone) {
