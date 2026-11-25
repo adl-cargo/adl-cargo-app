@@ -2,7 +2,7 @@
 <html lang="ru" data-pal="graphite" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-bQ2YuUMpKOO0ao/EX3krxKSMaO6R9JndO5+HzjX2FK8='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://telegram.org 'sha256-65+6q7WxInTrdA5+DbQlQ/9D8ikPGRAswjiPomNkW4s='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://dwzdylyalwmfmjzhmmjy.supabase.co; connect-src https://dwzdylyalwmfmjzhmmjy.supabase.co; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ADL Cargo — приложение</title>
 <meta name="robots" content="noindex">
@@ -285,7 +285,7 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     kg: ['{0} кг', '{0} kg'], ton: ['{0} т', '{0} t'], price_neg: ['Договорная', 'Kelishiladi'], sum: ['сум', 'so\u2018m'],
     vip: ['VIP · вся машина', 'VIP · butun mashina'], intracity: ['По городу', 'Shahar ichida'],
     d_weight: ['Вес', 'Og\u2018irligi'], d_desc: ['Описание', 'Tavsif'], d_none: ['Не указано', 'Ko\u2018rsatilmagan'],
-    show_phone: ['Показать номер', 'Raqamni ko\u2018rsatish'], call_btn: ['Позвонить', 'Qo\u2018ng\u2018iroq qilish'], call: ['Позвонить {0}', 'Qo\u2018ng\u2018iroq qilish {0}'], own_listing: ['Это ваше объявление.', 'Bu sizning e\u2019loningiz.'],
+    show_phone: ['Показать номер', 'Raqamni ko\u2018rsatish'], call_btn: ['Позвонить', 'Qo\u2018ng\u2018iroq qilish'], copy_num: ['Скопировать номер', 'Raqamni nusxalash'], copied: ['Номер скопирован', 'Raqam nusxalandi'], call: ['Позвонить {0}', 'Qo\u2018ng\u2018iroq qilish {0}'], own_listing: ['Это ваше объявление.', 'Bu sizning e\u2019loningiz.'],
     phone_after_login: ['Номер открывается после входа через Telegram.', 'Raqam Telegram orqali kirgandan keyin ochiladi.'],
     phone_open_bot: ['Откройте приложение из бота, чтобы увидеть номер.', 'Raqamni ko\u2018rish uchun ilovani bot orqali oching.'], close: ['Закрыть', 'Yopish'],
     photo_alt: ['Фото груза: {0}', 'Yuk surati: {0}'], back: ['Назад к объявлению', 'E\u2019longa qaytish'], prev: ['Предыдущее фото', 'Oldingi surat'], next: ['Следующее фото', 'Keyingi surat'],
@@ -920,14 +920,21 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
           b.disabled = true;
           rpc('reveal_listing_contacts', { p_listing_id: l.id }).then(function (phones) {
             slot.textContent = '';
-            (Array.isArray(phones) ? phones : [phones]).forEach(function (phone, i) {
-              var a = el('a', (i === 0 ? 'btn pri block' : 'btn sec block')); a.href = 'tel:' + String(phone).replace(/[^\d+]/g, '');
+            var list = Array.isArray(phones) ? phones : [phones];
+            list.forEach(function (phone, i) {
+              var num = String(phone).replace(/[^\d+]/g, '');
+              var a = el('a', (i === 0 ? 'btn pri block' : 'btn sec block')); a.href = 'tel:' + num;
+              /* iOS Telegram ignores plain tel: links; window.open works there */
+              a.addEventListener('click', function (ev) { ev.preventDefault(); dialNumber(num); });
               if (i) a.style.marginTop = '8px';
               a.appendChild(icon(P.phone, 18)); a.appendChild(document.createTextNode(t('call', phone))); slot.appendChild(a);
             });
-            /* one number: dial right away; the link above stays as a fallback if the WebView blocks auto-dial */
-            var only = slot.querySelectorAll('a');
-            if (only.length === 1) { try { only[0].click(); } catch (e) { /* fallback link stays visible */ } }
+            /* guaranteed fallback: copy the number */
+            var cp = el('button', 'btn sec block', t('copy_num')); cp.type = 'button'; cp.style.marginTop = '8px';
+            cp.addEventListener('click', function () { copyNumber(list[0]); });
+            slot.appendChild(cp);
+            /* one number: try to dial right away; the button above stays if the WebView blocks it */
+            if (list.length === 1) { dialNumber(String(list[0]).replace(/[^\d+]/g, '')); }
           }).catch(function (e) { b.disabled = false; toast(friendly(e.message)); });
         });
         slot.appendChild(b);
@@ -947,6 +954,21 @@ dialog#pickDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;bo
     var p = el('div', 'panel'); p.appendChild(el('h2', null, title)); p.appendChild(el('p', null, text));
     if (btnText) { var b = el('button', 'btn pri block'); b.type = 'button'; b.textContent = btnText; b.addEventListener('click', fn); p.appendChild(b); }
     parent.appendChild(p);
+  }
+  function dialNumber(num) {
+    try { window.open('tel:' + num, '_self'); } catch (e) { try { window.location.href = 'tel:' + num; } catch (e2) { /* the copy button stays */ } }
+  }
+  function copyNumber(phone) {
+    var txt = String(phone);
+    function done() { toast(t('copied')); }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(done, function () { legacyCopy(txt); done(); }); return; }
+    } catch (e) { /* fall through */ }
+    legacyCopy(txt); done();
+  }
+  function legacyCopy(txt) {
+    var ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) { /* nothing more to try */ } document.body.removeChild(ta);
   }
   function openBot() { if (tg && tg.openTelegramLink) { tg.openTelegramLink(BOT); if (tg.close) setTimeout(function () { tg.close(); }, 200); } else { window.open(BOT, '_blank'); } }
   function gateTg(body, textKey) { gateCard(body, t('gate_h'), t(textKey), t('open_bot'), openBot); }
